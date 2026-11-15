@@ -1,38 +1,31 @@
-# Fluxo Git e Checklist de Build — Frente 01
+# Fluxo Git, Pull Request e Regra de Commit por Classe Alterada — MyGo
 
-## 1. Padrão de Branches
+## 1. Regra Obrigatória: Commit Atômico a Cada Classe/Arquivo Modificado
 
-Nunca realize commits ou pushes diretamente nas branches `main` ou `master`.
+Para garantir rastreabilidade total entre a equipe e facilitar code reviews e rollbacks:
 
-- **Novas funcionalidades / melhorias mobile:**
-  ```bash
-  git checkout -b feat/frente01-<nome-curto-da-tarefa>
-  ```
-- **Correções de bugs / quebras de layout:**
-  ```bash
-  git checkout -b fix/frente01-<nome-curto-da-tarefa>
-  ```
+1. **Uma Classe / Componente Modificado = Um Commit Imediato:**
+   - Alterou uma entidade (`User.java`, `Orcamento.java`)? Faça o commit imediatamente antes de editar a próxima classe.
+   - Alterou um Service ou Controller (`UserService.java`, `AuthController.java`)? Faça o commit dedicado daquela classe.
+   - Alterou uma tela ou serviço no Frontend (`RegisterPage.tsx`, `HistoricoPage.tsx`)? Faça o commit específico daquele arquivo.
 
----
+2. **Sincronização (`git pull` antes de codar e antes do PR):**
+   ```bash
+   git pull origin main --rebase
+   ```
 
-## 2. Conventional Commits
+3. **Padrão de Nomenclatura de Branches:**
+   - `feat/frente01-<nome-curto>` (Mobile-First & Economia de VPS)
+   - `feat/frente02-<nome-curto>` (Calculadora, Aceite 1-Clique e Materiais)
+   - `feat/frente03-<nome-curto>` (Localidade Multi-Tenant, Vínculo `?ref=` e Anti-Panelinha)
+   - `fix/frente0X-<nome-curto>` (Correções de bugs)
 
-Todos os commits devem seguir o padrão semântico:
+4. **Padrão Conventional Commits por Classe:**
+   - `feat(User.java): add CPF, phone SMS verification and geolocation fields`
+   - `feat(UserService.java): implement geolocation matching and post-service rating`
+   - `feat(RegisterPage.tsx): add CEP cache and SMS/Email verification toggle`
 
-- `feat(mobile): adapta listagem de orcamentos para cards responsivos`
-- `fix(ui): remove largura fixa em px na tela de login em 360px`
-- `perf(vps): adiciona debounce de 400ms e bloqueio isSubmitting`
-- `docs(governanca): inicializa GEMINI.md e templates da frente 01`
-
----
-
-## 3. Checklist Obrigatório de Build Antes do Push
-
-Antes de executar `git push -u origin HEAD`, valide todos os itens abaixo:
-
-- [ ] Executar `npm run build` e garantir **zero erros** de TypeScript ou empacotamento Vite.
-- [ ] Inspecionar as telas alteradas nas larguras **360px** e **390px** (sem barra de rolagem horizontal).
-- [ ] Confirmar que tabelas viram cards empilhados abaixo de `768px`.
-- [ ] Confirmar que botões e inputs têm no mínimo `44px` de altura.
-- [ ] Confirmar que formulários possuem trava `isSubmitting` contra cliques duplos.
-- [ ] Preencher a descrição do Pull Request utilizando `.github/pull_request_template.md`.
+5. **Validação Obrigatória Antes do Push / Pull Request:**
+   - **Frontends (`front_mygo_react` / `orcamento-front`):** Executar `npm run build` com zero erros.
+   - **Backends (`api_1`, `api-calculadora`, `api-materiais`):** Verificar compilação limpa e isolamento de `tenantId`.
+   - Preencher integralmente o `.github/pull_request_template.md`.
