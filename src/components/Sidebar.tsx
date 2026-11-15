@@ -1,5 +1,35 @@
 import React, { useEffect, useState } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
+import {
+  IonIcon,
+  IonModal,
+  IonHeader,
+  IonToolbar,
+  IonTitle,
+  IonButtons,
+  IonButton,
+  IonContent,
+  IonList,
+  IonItem,
+  IonLabel,
+  IonBadge,
+  IonRippleEffect
+} from '@ionic/react';
+import {
+  gridOutline,
+  calculatorOutline,
+  timeOutline,
+  constructOutline,
+  cubeOutline,
+  optionsOutline,
+  peopleOutline,
+  starOutline,
+  barChartOutline,
+  logOutOutline,
+  closeOutline,
+  flashOutline,
+  desktopOutline
+} from 'ionicons/icons';
 import { authService } from '../core/services/authService';
 import './Sidebar.css';
 
@@ -33,6 +63,11 @@ export const Sidebar: React.FC = () => {
     authService.logout();
     setShowMobileMenu(false);
     navigate('/login');
+  };
+
+  const navigateFromModal = (path: string) => {
+    setShowMobileMenu(false);
+    navigate(path);
   };
 
   if (!isMobile) {
@@ -137,134 +172,179 @@ export const Sidebar: React.FC = () => {
           )}
         </ul>
 
-        <div className="sidebar-footer">
-          <span className="footer-badge">NBR 5410 Compliant</span>
+        <div className="sidebar-footer" style={{ flexDirection: 'column', gap: '8px' }}>
+          <a
+            href="http://localhost:4200"
+            className="app-btn app-btn-secondary app-btn-sm"
+            style={{ width: '100%', fontSize: '0.72rem' }}
+            title="Abrir versão Desktop (Angular)"
+          >
+            <IonIcon icon={desktopOutline} style={{ fontSize: '15px' }} />
+            <span>Versão PC (Angular)</span>
+          </a>
+          <span className="footer-badge">Ionic Mobile + NBR 5410</span>
         </div>
       </nav>
     );
   }
 
-  // MOBILE (< 768px): Barra de navegação inferior fixa com as 4 áreas principais (Prompt 02)
+  // MOBILE (< 768px): Barra de navegação inferior nativa Ionic + Sheet Modal Nativo (iOS/Android)
   return (
-    <nav className="bottom-nav" aria-label="Navegação Inferior Mobile">
-      <NavLink
-        to="/dashboard-main"
-        className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}
-      >
-        <span className="material-icons">space_dashboard</span>
-        <span className="bottom-nav-label">Início</span>
-      </NavLink>
+    <>
+      <nav className="bottom-nav ionic-bottom-tab-bar" aria-label="Navegação Inferior Mobile Ionic">
+        <NavLink
+          to="/dashboard-main"
+          className={({ isActive }) => `bottom-nav-item ion-activatable ${isActive ? 'active' : ''}`}
+        >
+          <IonIcon icon={gridOutline} className="ionic-tab-icon" />
+          <span className="bottom-nav-label">Início</span>
+          <IonRippleEffect />
+        </NavLink>
 
-      <NavLink
-        to="/quiz"
-        className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}
-      >
-        <span className="material-icons">calculate</span>
-        <span className="bottom-nav-label">Novo Orçamento</span>
-      </NavLink>
+        <NavLink
+          to="/quiz"
+          className={({ isActive }) => `bottom-nav-item ion-activatable ${isActive ? 'active' : ''}`}
+        >
+          <IonIcon icon={calculatorOutline} className="ionic-tab-icon" />
+          <span className="bottom-nav-label">Orçar</span>
+          <IonRippleEffect />
+        </NavLink>
 
-      <NavLink
-        to="/historico"
-        className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}
-      >
-        <span className="material-icons">history</span>
-        <span className="bottom-nav-label">Histórico</span>
-      </NavLink>
+        <NavLink
+          to="/historico"
+          className={({ isActive }) => `bottom-nav-item ion-activatable ${isActive ? 'active' : ''}`}
+        >
+          <IonIcon icon={timeOutline} className="ionic-tab-icon" />
+          <span className="bottom-nav-label">Histórico</span>
+          <IonRippleEffect />
+        </NavLink>
 
-      <button
-        type="button"
-        className={`bottom-nav-item bottom-nav-more ${showMobileMenu ? 'active' : ''}`}
-        onClick={() => setShowMobileMenu((prev) => !prev)}
-      >
-        <span className="material-icons">{showMobileMenu ? 'close' : 'handyman'}</span>
-        <span className="bottom-nav-label">Perfil / Ferramentas</span>
-      </button>
+        <button
+          type="button"
+          className={`bottom-nav-item bottom-nav-more ion-activatable ${showMobileMenu ? 'active' : ''}`}
+          onClick={() => setShowMobileMenu(true)}
+        >
+          <IonIcon icon={constructOutline} className="ionic-tab-icon" />
+          <span className="bottom-nav-label">Ferramentas</span>
+          <IonRippleEffect />
+        </button>
+      </nav>
 
-      {showMobileMenu && (
-        <>
-          <div className="mobile-menu-overlay" onClick={() => setShowMobileMenu(false)} />
-          <div className="mobile-menu-panel" role="dialog" aria-label="Perfil e Ferramentas">
-            <div className="mobile-menu-header">
-              <div className="mobile-menu-brand">
-                <span className="material-icons">bolt</span>
-                <strong>PERFIL & FERRAMENTAS MYGO</strong>
+      <IonModal
+        isOpen={showMobileMenu}
+        onDidDismiss={() => setShowMobileMenu(false)}
+        initialBreakpoint={0.65}
+        breakpoints={[0, 0.65, 0.92]}
+        handleBehavior="cycle"
+        className="mygo-ionic-sheet-modal"
+      >
+        <IonHeader className="ion-no-border">
+          <IonToolbar className="mygo-ionic-toolbar">
+            <IonTitle className="mygo-ionic-sheet-title">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <IonIcon icon={flashOutline} style={{ color: 'var(--accent-primary)' }} />
+                <span>Ferramentas & Perfil MyGo</span>
               </div>
-              <button
-                type="button"
-                className="mobile-menu-close"
-                onClick={() => setShowMobileMenu(false)}
-                aria-label="Fechar menu"
+            </IonTitle>
+            <IonButtons slot="end">
+              <IonButton onClick={() => setShowMobileMenu(false)}>
+                <IonIcon icon={closeOutline} />
+              </IonButton>
+            </IonButtons>
+          </IonToolbar>
+        </IonHeader>
+
+        <IonContent className="ion-padding mygo-ionic-sheet-content">
+          <IonList lines="none" className="mygo-ionic-list">
+            <IonItem
+              button
+              detail
+              onClick={() => navigateFromModal('/levantamento')}
+              className="mygo-ionic-item"
+            >
+              <IonIcon icon={cubeOutline} slot="start" className="mygo-ionic-item-icon" />
+              <IonLabel>
+                <h3>Levantamento de Materiais</h3>
+                <p>Cálculo rápido padrão NBR 5410</p>
+              </IonLabel>
+            </IonItem>
+
+            <IonItem
+              button
+              detail
+              onClick={() => navigateFromModal('/config-precos')}
+              className="mygo-ionic-item"
+            >
+              <IonIcon icon={optionsOutline} slot="start" className="mygo-ionic-item-icon" />
+              <IonLabel>
+                <h3>Tabela de Preços & Serviços</h3>
+                <p>Ajuste seu valor de ponto e mão de obra</p>
+              </IonLabel>
+            </IonItem>
+
+            <IonItem
+              button
+              detail
+              onClick={() => navigateFromModal('/parceiros')}
+              className="mygo-ionic-item"
+            >
+              <IonIcon icon={peopleOutline} slot="start" className="mygo-ionic-item-icon" />
+              <IonLabel>
+                <h3>Rede de Parceiros Palmas</h3>
+                <p>Lojas elétricas e fornecedores locais</p>
+              </IonLabel>
+            </IonItem>
+
+            {planType === 'FREE' && (
+              <IonItem
+                button
+                detail
+                onClick={() => navigateFromModal('/assinatura')}
+                className="mygo-ionic-item mygo-ionic-item-pro"
               >
-                <span className="material-icons">close</span>
-              </button>
-            </div>
+                <IonIcon icon={starOutline} slot="start" style={{ color: 'var(--accent-primary)' }} />
+                <IonLabel>
+                  <h3 style={{ color: 'var(--accent-primary)', fontWeight: 700 }}>
+                    Upgrade para Plano PRO
+                  </h3>
+                  <p>Orçamentos ilimitados e PDF personalizado</p>
+                </IonLabel>
+                <IonBadge color="warning" slot="end">
+                  PRO
+                </IonBadge>
+              </IonItem>
+            )}
 
-            <div className="mobile-menu-links">
-              <NavLink
-                to="/levantamento"
-                className={({ isActive }) => `mobile-menu-item ${isActive ? 'active' : ''}`}
-                onClick={() => setShowMobileMenu(false)}
+            {userRole === 'ADMIN' && (
+              <IonItem
+                button
+                detail
+                onClick={() => navigateFromModal('/reports')}
+                className="mygo-ionic-item"
               >
-                <span className="material-icons">inventory_2</span>
-                <span>Levantamento de Materiais (NBR 5410)</span>
-              </NavLink>
+                <IonIcon icon={barChartOutline} slot="start" className="mygo-ionic-item-icon" />
+                <IonLabel>
+                  <h3>Relatórios de Gestão</h3>
+                  <p>Métricas administrativas do ecossistema</p>
+                </IonLabel>
+              </IonItem>
+            )}
 
-              <NavLink
-                to="/config-precos"
-                className={({ isActive }) => `mobile-menu-item ${isActive ? 'active' : ''}`}
-                onClick={() => setShowMobileMenu(false)}
-              >
-                <span className="material-icons">tune</span>
-                <span>Tabela de Preços & Serviços Extras</span>
-              </NavLink>
-
-              <NavLink
-                to="/parceiros"
-                className={({ isActive }) => `mobile-menu-item ${isActive ? 'active' : ''}`}
-                onClick={() => setShowMobileMenu(false)}
-              >
-                <span className="material-icons">handshake</span>
-                <span>Rede de Parceiros Palmas</span>
-              </NavLink>
-
-              {planType === 'FREE' && (
-                <NavLink
-                  to="/assinatura"
-                  className={({ isActive }) =>
-                    `mobile-menu-item mobile-menu-pro ${isActive ? 'active' : ''}`
-                  }
-                  onClick={() => setShowMobileMenu(false)}
-                >
-                  <span className="material-icons">stars</span>
-                  <span>Upgrade para PRO ⚡</span>
-                </NavLink>
-              )}
-
-              {userRole === 'ADMIN' && (
-                <NavLink
-                  to="/reports"
-                  className={({ isActive }) => `mobile-menu-item ${isActive ? 'active' : ''}`}
-                  onClick={() => setShowMobileMenu(false)}
-                >
-                  <span className="material-icons">analytics</span>
-                  <span>Relatórios de Gestão</span>
-                </NavLink>
-              )}
-
-              <div className="mobile-menu-divider" />
-
-              <button
-                type="button"
-                className="mobile-menu-item mobile-menu-logout"
-                onClick={handleLogout}
-              >
-                <span className="material-icons">logout</span>
-                <span>Sair da Conta</span>
-              </button>
-            </div>
-          </div>
-        </>
-      )}
-    </nav>
+            <IonItem
+              button
+              detail={false}
+              onClick={handleLogout}
+              className="mygo-ionic-item mygo-ionic-item-logout"
+            >
+              <IonIcon icon={logOutOutline} slot="start" style={{ color: 'var(--status-danger)' }} />
+              <IonLabel>
+                <h3 style={{ color: 'var(--status-danger)', fontWeight: 700 }}>Sair da Conta</h3>
+                <p>Encerrar sessão com segurança no aparelho</p>
+              </IonLabel>
+            </IonItem>
+          </IonList>
+        </IonContent>
+      </IonModal>
+    </>
   );
 };

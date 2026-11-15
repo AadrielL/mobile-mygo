@@ -1,4 +1,5 @@
 import React from 'react';
+import { IonApp } from '@ionic/react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { OnboardingPage } from './pages/Onboarding/OnboardingPage';
@@ -16,48 +17,50 @@ import { ReportsPage } from './pages/Reports/ReportsPage';
 
 export const App: React.FC = () => {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Navigate to="/onboarding" replace />} />
-        <Route path="/onboarding" element={<OnboardingPage />} />
-        <Route path="/parceiros" element={<ParceirosPage />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
+    <IonApp>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<Navigate to="/onboarding" replace />} />
+          <Route path="/onboarding" element={<OnboardingPage />} />
+          <Route path="/parceiros" element={<ParceirosPage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
 
-        <Route
-          path="/assinatura"
-          element={
-            <ProtectedRoute>
-              <AssinaturaPage />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/"
-          element={
-            <ProtectedRoute>
-              <DashboardLayout />
-            </ProtectedRoute>
-          }
-        >
-          <Route path="dashboard-main" element={<MainViewPage />} />
-          <Route path="quiz" element={<QuizPage />} />
-          <Route path="historico" element={<HistoricoPage />} />
-          <Route path="levantamento" element={<LevantamentoPage />} />
           <Route
-            path="reports"
+            path="/assinatura"
             element={
-              <ProtectedRoute requiredRole="ADMIN">
-                <ReportsPage />
+              <ProtectedRoute>
+                <AssinaturaPage />
               </ProtectedRoute>
             }
           />
-          <Route path="config-precos" element={<ConfigPrecosPage />} />
-        </Route>
 
-        <Route path="*" element={<Navigate to="/dashboard-main" replace />} />
-      </Routes>
-    </BrowserRouter>
+          <Route
+            path="/"
+            element={
+              <ProtectedRoute>
+                <DashboardLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route path="dashboard-main" element={<MainViewPage />} />
+            <Route path="quiz" element={<QuizPage />} />
+            <Route path="historico" element={<HistoricoPage />} />
+            <Route path="levantamento" element={<LevantamentoPage />} />
+            <Route
+              path="reports"
+              element={
+                <ProtectedRoute requiredRole="ADMIN">
+                  <ReportsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="config-precos" element={<ConfigPrecosPage />} />
+          </Route>
+
+          <Route path="*" element={<Navigate to="/dashboard-main" replace />} />
+        </Routes>
+      </BrowserRouter>
+    </IonApp>
   );
 };

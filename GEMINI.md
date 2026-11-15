@@ -1,16 +1,19 @@
-# Diretrizes de Governança — MyGo React (Frente 01: Mobile-First & Economia de VPS)
+# Diretrizes de Governança — MyGo React + Ionic (Frente 01: Mobile-First & Economia de VPS)
 
 Este repositório segue regras estritas de engenharia Frontend focadas em usabilidade em campo para eletricistas e eficiência de recursos em servidor VPS.
 
 ## Regras Obrigatórias
 
-1. **Infraestrutura e Arquitetura:**
-   - Projeto React multi-tenant hospedado em VPS básica na Hostinger.
+1. **Infraestrutura e Arquitetura Dual (PC vs Mobile):**
+   - **PC / Desktop:** Atendido pelo projeto Angular (`C:\meus projetos\front_mygo\orcamento-front`, porta `4200`).
+   - **Mobile:** Atendido por este projeto React + **Ionic Framework (`@ionic/react`)** (`C:\meus projetos\front_mygo_react`, porta `4201`).
+   - Projeto multi-tenant hospedado em VPS básica na Hostinger.
    - Preservar integralmente os cabeçalhos multi-tenant (`Authorization`, `X-User-Role`, `X-Tenant-ID`) em todas as chamadas para as APIs (8081, 8082 e 8083).
 
 2. **Economia de Dependências e Bundle:**
-   - Proibido instalar bibliotecas pesadas sem aprovação.
-   - Utilizar CSS puro para animações, skeletons de carregamento e gráficos leves.
+   - **Exceção Aprovada pelo Usuário:** `@ionic/react` e `ionicons` aprovados como framework oficial para experiência nativa Mobile (iOS/Android).
+   - Proibido instalar outras bibliotecas pesadas sem aprovação.
+   - Utilizar CSS puro e componentes Ionic nativos leves para animações, skeletons de carregamento e gráficos leves.
 
 3. **Mobile-First Obrigatório (Uso em Obra com Uma Mão):**
    - Projetar e validar primeiro para resoluções de **360px a 414px** (360px e 390px prioritários).

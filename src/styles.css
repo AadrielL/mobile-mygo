@@ -652,6 +652,98 @@ button, input, select, textarea {
 .text-muted { color: var(--text-muted) !important; }
 
 /* ==========================================================
+   IONIC FRAMEWORK NATIVE MOBILE OVERRIDES (DARK/LIGHT THEME)
+   ========================================================== */
+:root {
+  --ion-background-color: var(--bg-main);
+  --ion-text-color: var(--text-main);
+  --ion-color-primary: #e5a00d;
+  --ion-color-primary-rgb: 229, 160, 13;
+  --ion-color-primary-contrast: #0a0b0e;
+  --ion-color-warning: #e5a00d;
+  --ion-toolbar-background: var(--bg-surface);
+  --ion-toolbar-color: var(--text-main);
+  --ion-item-background: var(--bg-card);
+  --ion-item-color: var(--text-main);
+}
+
+ion-app {
+  background-color: var(--bg-main);
+  color: var(--text-main);
+  overflow-y: auto !important;
+  position: relative !important;
+  min-height: 100vh;
+}
+
+.mygo-ionic-sheet-modal {
+  --background: var(--bg-surface);
+  --border-radius: 20px 20px 0 0;
+  --box-shadow: 0 -10px 35px rgba(0, 0, 0, 0.7);
+}
+
+.mygo-ionic-toolbar {
+  --background: var(--bg-surface);
+  --color: var(--text-main);
+  --border-color: var(--border-subtle);
+  padding-top: 6px;
+}
+
+.mygo-ionic-sheet-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.mygo-ionic-sheet-content {
+  --background: var(--bg-surface);
+}
+
+.mygo-ionic-list {
+  background: transparent !important;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mygo-ionic-item {
+  --background: var(--bg-card);
+  --color: var(--text-main);
+  --border-radius: 12px;
+  --padding-start: 14px;
+  --inner-padding-end: 14px;
+  --min-height: 58px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+}
+
+.mygo-ionic-item h3 {
+  font-size: 0.9rem !important;
+  font-weight: 600 !important;
+  color: var(--text-main);
+  margin-bottom: 2px;
+}
+
+.mygo-ionic-item p {
+  font-size: 0.76rem !important;
+  color: var(--text-muted);
+}
+
+.mygo-ionic-item-icon {
+  color: var(--accent-primary);
+  font-size: 22px;
+}
+
+.mygo-ionic-item-pro {
+  border-color: var(--accent-border);
+  --background: var(--accent-muted);
+}
+
+.mygo-ionic-item-logout {
+  border-color: var(--status-danger-border);
+  margin-top: 6px;
+}
+
+/* ==========================================================
    MOBILE BREAKPOINT (< 768px — FOCO 360px e 390px)
    ========================================================== */
 @media (max-width: 767px) {
