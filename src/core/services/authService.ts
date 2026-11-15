@@ -100,5 +100,15 @@ export const authService = {
 
   async refreshSession(): Promise<any> {
     return this.getMe();
+  },
+
+  async avaliarProfissional(payload: {
+    profissionalId?: string;
+    tenantId?: string;
+    orcamentoId?: string;
+    estrelas: number;
+    tag: string;
+  }): Promise<any> {
+    return httpClient.post<any>(`${API_URL}/auth/avaliar-profissional`, payload);
   }
 };

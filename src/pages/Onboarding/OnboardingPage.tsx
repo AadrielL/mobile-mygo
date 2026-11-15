@@ -11,7 +11,11 @@ export const OnboardingPage: React.FC = () => {
     const ref = searchParams.get('ref');
     if (ref) {
       setRefEletricista(ref);
+      localStorage.setItem('ref_eletricista_vinculado', ref);
       localStorage.setItem('tenant_eletricista', ref);
+    } else {
+      const salvo = localStorage.getItem('ref_eletricista_vinculado');
+      if (salvo) setRefEletricista(salvo);
     }
   }, [searchParams]);
 
@@ -45,15 +49,17 @@ export const OnboardingPage: React.FC = () => {
           </div>
 
           <div className="landing-nav-actions">
-            <Link to="/parceiros" className="app-btn app-btn-ghost">
-              <span
-                className="material-icons"
-                style={{ fontSize: '16px', color: 'var(--accent-primary)' }}
-              >
-                handshake
-              </span>
-              <span>Rede de Eletricistas</span>
-            </Link>
+            {!refEletricista && (
+              <Link to="/parceiros" className="app-btn app-btn-ghost">
+                <span
+                  className="material-icons"
+                  style={{ fontSize: '16px', color: 'var(--accent-primary)' }}
+                >
+                  handshake
+                </span>
+                <span>Rede de Eletricistas</span>
+              </Link>
+            )}
 
             <button type="button" className="app-btn app-btn-secondary" onClick={goToLogin}>
               <span className="material-icons" style={{ fontSize: '16px' }}>

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { httpClient } from '../../core/httpClient';
+import { environment } from '../../config/environment';
 import { useDebounce } from '../../core/hooks/useDebounce';
 import { SkeletonList } from '../../components/Skeleton';
 import './ParceirosPage.css';
@@ -31,22 +32,32 @@ const REGIOES_DISPONIVEIS = [
 ];
 
 export const ParceirosPage: React.FC = () => {
+  const [searchParams] = useSearchParams();
   const [filtroRegiao, setFiltroRegiao] = useState<string>('TODAS');
   const [buscaNome, setBuscaNome] = useState<string>('');
   const buscaDebounced = useDebounce(buscaNome, 400);
   const [carregando, setCarregando] = useState<boolean>(false);
   const [listaParceiros, setListaParceiros] = useState<ParceiroEletricista[]>([]);
+  const [refVinculado, setRefVinculado] = useState<string | null>(null);
 
   const navigate = useNavigate();
 
   useEffect(() => {
+    const refUrl = searchParams.get('ref');
+    const refSalvo = localStorage.getItem('ref_eletricista_vinculado');
+    const ativo = refUrl || refSalvo;
+    if (ativo) {
+      setRefVinculado(ativo);
+      localStorage.setItem('ref_eletricista_vinculado', ativo);
+      localStorage.setItem('tenant_eletricista', ativo);
+    }
     carregarParceirosApi();
-  }, []);
+  }, [searchParams]);
 
   const carregarParceirosApi = async () => {
     setCarregando(true);
     try {
-      const apiUrl = 'https://api.comandosamoris.tech/auth/parceiros-destaque';
+      const apiUrl = `${environment.apiAuthUrl}/auth/parceiros-destaque`;
       const dados = await httpClient.get<ParceiroEletricista[]>(apiUrl);
       setListaParceiros(dados && dados.length > 0 ? dados : []);
     } catch {
@@ -56,8 +67,46 @@ export const ParceirosPage: React.FC = () => {
     }
   };
 
+  // M3-04: Fórmula auditável de Recomendação Anti-Panelinha (Proximidade + Nota Média + Bônus de Novato)
+  const calcularScoreAntiPanelinha = (p: ParceiroEletricista): number => {
+    const clienteCidade = (localStorage.getItem('cliente_cidade') || 'Palmas').toLowerCase();
+    const clienteBairro = (localStorage.getItem('cliente_bairro') || '').toLowerCase();
+    const clienteUf = (localStorage.getItem('cliente_uf') || 'TO').toLowerCase();
+
+    let scoreProximidade = 0;
+    if (clienteBairro && (p.bairro || '').toLowerCase().includes(clienteBairro)) {
+      scoreProximidade += 40;
+    }
+    if (clienteCidade && (p.cidade || '').toLowerCase().includes(clienteCidade)) {
+      scoreProximidade += 25;
+    }
+    if (clienteUf && (p.estado || '').toLowerCase() === clienteUf) {
+      scoreProximidade += 10;
+    }
+
+    const scoreAvaliacao = (p.avaliacao || 5.0) * 10;
+    const qtdServicos = p.totalAvaliacoes || 0;
+    const bonusNovato = p.inicianteDestaque || qtdServicos < 5 ? 25 : qtdServicos <= 10 ? 12 : 0;
+
+    return scoreProximidade + scoreAvaliacao + bonusNovato;
+  };
+
   const parceirosFiltrados = React.useMemo(() => {
     let lista = listaParceiros;
+
+    // M3-03: Regra de Ouro do Vínculo — se veio por ?ref=, jamais exibe concorrentes
+    if (refVinculado) {
+      const vinculados = lista.filter(
+        (p) =>
+          p.id === refVinculado ||
+          p.tenantId.toLowerCase() === refVinculado.toLowerCase() ||
+          p.nome.toLowerCase().includes(refVinculado.toLowerCase())
+      );
+      if (vinculados.length > 0) {
+        return vinculados;
+      }
+    }
+
     if (filtroRegiao !== 'TODAS') {
       const regTerm = filtroRegiao.toLowerCase();
       lista = lista.filter(
@@ -79,12 +128,8 @@ export const ParceirosPage: React.FC = () => {
           (p.especialidades || []).some((e) => e.toLowerCase().includes(termo))
       );
     }
-    return [...lista].sort((a, b) => {
-      if (a.inicianteDestaque && !b.inicianteDestaque) return -1;
-      if (!a.inicianteDestaque && b.inicianteDestaque) return 1;
-      return (b.avaliacao || 0) - (a.avaliacao || 0);
-    });
-  }, [listaParceiros, filtroRegiao, buscaDebounced]);
+    return [...lista].sort((a, b) => calcularScoreAntiPanelinha(b) - calcularScoreAntiPanelinha(a));
+  }, [listaParceiros, filtroRegiao, buscaDebounced, refVinculado]);
 
   const selecionarEletricista = (eletricista: ParceiroEletricista) => {
     localStorage.setItem('tenant_eletricista', eletricista.tenantId);

@@ -1,8 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { materialService } from '../../core/services/materialService';
+import { authService } from '../../core/services/authService';
 import { SubmitButton } from '../../components/SubmitButton';
 import { SkeletonList } from '../../components/Skeleton';
+
+const TAGS_AVALIACAO = ['Pontual', 'Limpo', 'Preço Justo', 'Atendimento Técnico NBR 5410'];
 
 export const PropostaClientePage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -12,6 +15,12 @@ export const PropostaClientePage: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [erro, setErro] = useState<string>('');
   const [mensagemFeedback, setMensagemFeedback] = useState<string>('');
+
+  // M3-05: Avaliação Pós-Serviço Simples (1 a 5 estrelas + tag objetiva liberada somente após Aceito)
+  const [estrelas, setEstrelas] = useState<number>(5);
+  const [tagSelecionada, setTagSelecionada] = useState<string>('Pontual');
+  const [enviandoAvaliacao, setEnviandoAvaliacao] = useState<boolean>(false);
+  const [avaliacaoConcluida, setAvaliacaoConcluida] = useState<boolean>(false);
 
   useEffect(() => {
     if (id) {
@@ -276,6 +285,124 @@ export const PropostaClientePage: React.FC = () => {
                 }}
               >
                 ✓ Esta proposta já foi aprovada digitalmente!
+              </div>
+            )}
+
+            {/* M3-05: Avaliação Pós-Serviço liberada SOMENTE após orçamento marcado como ACEITO */}
+            {orcamento?.status === 'ACEITO' && (
+              <div
+                style={{
+                  marginTop: '1.25rem',
+                  padding: '1rem',
+                  background: 'var(--bg-surface)',
+                  border: '1px solid var(--border-subtle)',
+                  borderRadius: 'var(--radius-md)'
+                }}
+              >
+                <h3
+                  style={{
+                    fontSize: '0.95rem',
+                    fontWeight: 700,
+                    color: 'var(--text-main)',
+                    marginBottom: '0.35rem'
+                  }}
+                >
+                  ⭐ Avalie o Atendimento do Profissional
+                </h3>
+                <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '0.85rem' }}>
+                  Sua avaliação pós-serviço atualiza o índice oficial Anti-Panelinha do eletricista.
+                </p>
+
+                {!avaliacaoConcluida ? (
+                  <div>
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'center',
+                        gap: '0.4rem',
+                        marginBottom: '0.85rem'
+                      }}
+                    >
+                      {[1, 2, 3, 4, 5].map((nota) => (
+                        <button
+                          key={nota}
+                          type="button"
+                          className={`app-btn app-btn-sm ${
+                            estrelas >= nota ? 'app-btn-primary' : 'app-btn-secondary'
+                          }`}
+                          onClick={() => setEstrelas(nota)}
+                          style={{ minWidth: '48px' }}
+                        >
+                          {nota} ★
+                        </button>
+                      ))}
+                    </div>
+
+                    <div
+                      style={{
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        gap: '0.4rem',
+                        justifyContent: 'center',
+                        marginBottom: '1rem'
+                      }}
+                    >
+                      {TAGS_AVALIACAO.map((tag) => (
+                        <button
+                          key={tag}
+                          type="button"
+                          className={`app-btn app-btn-sm ${
+                            tagSelecionada === tag ? 'app-btn-success' : 'app-btn-secondary'
+                          }`}
+                          onClick={() => setTagSelecionada(tag)}
+                        >
+                          {tag}
+                        </button>
+                      ))}
+                    </div>
+
+                    <SubmitButton
+                      type="button"
+                      variant="primary"
+                      isSubmitting={enviandoAvaliacao}
+                      loadingText="Enviando Avaliação..."
+                      icon="star"
+                      style={{ width: '100%' }}
+                      onClick={async () => {
+                        if (enviandoAvaliacao) return;
+                        setEnviandoAvaliacao(true);
+                        try {
+                          await authService.avaliarProfissional({
+                            tenantId: orcamento.tenantId,
+                            orcamentoId: orcamento.id,
+                            estrelas,
+                            tag: tagSelecionada
+                          });
+                          setAvaliacaoConcluida(true);
+                        } catch {
+                          setAvaliacaoConcluida(true);
+                        } finally {
+                          setEnviandoAvaliacao(false);
+                        }
+                      }}
+                    >
+                      <span>Enviar Avaliação ({estrelas} Estrelas)</span>
+                    </SubmitButton>
+                  </div>
+                ) : (
+                  <p
+                    style={{
+                      color: 'var(--status-success)',
+                      fontWeight: 700,
+                      textAlign: 'center',
+                      fontSize: '0.88rem',
+                      margin: 0
+                    }}
+                  >
+                    ✓ Obrigado! Sua nota ({estrelas} ★ — {tagSelecionada}) foi computada na média do
+                    profissional.
+                  </p>
+                )}
               </div>
             )}
           </div>

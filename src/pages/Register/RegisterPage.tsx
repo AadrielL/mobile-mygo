@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { authService } from '../../core/services/authService';
 import { SubmitButton } from '../../components/SubmitButton';
 
@@ -54,18 +54,48 @@ export const RegisterPage: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState('');
   const [sucessoMensagem, setSucessoMensagem] = useState('');
 
+  const [searchParams] = useSearchParams();
+  const [eletricistaVinculadoId, setEletricistaVinculadoId] = useState<string>('');
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const refUrl = searchParams.get('ref');
+    const refSalvo = localStorage.getItem('ref_eletricista_vinculado') || localStorage.getItem('tenant_eletricista');
+    const vinculo = refUrl || refSalvo || '';
+    if (vinculo) {
+      setEletricistaVinculadoId(vinculo);
+      localStorage.setItem('ref_eletricista_vinculado', vinculo);
+      localStorage.setItem('tenant_eletricista', vinculo);
+      setTipoPerfil('CLIENTE');
+    }
+  }, [searchParams]);
 
   const handleCepChange = async (rawVal: string) => {
     const formatted = formatCep(rawVal);
     setCep(formatted);
     const digits = rawVal.replace(/\D/g, '');
     if (digits.length === 8) {
+      // M3-01 / Performance VPS: Verifica primeiro o cache local de CEP para não repetir chamadas externas
+      const cacheKey = `mygo_cep_cache_${digits}`;
+      const cached = localStorage.getItem(cacheKey);
+      if (cached) {
+        try {
+          const parsed = JSON.parse(cached);
+          if (parsed.uf) setEstado(parsed.uf);
+          if (parsed.localidade) setCidade(parsed.localidade);
+          if (parsed.bairro) setBairro(parsed.bairro);
+          return;
+        } catch {
+          // segue para busca
+        }
+      }
+
       setBuscandoCep(true);
       try {
         const resp = await fetch(`https://viacep.com.br/ws/${digits}/json/`);
         const data = await resp.json();
         if (data && !data.erro) {
+          localStorage.setItem(cacheKey, JSON.stringify(data));
           if (data.uf) setEstado(data.uf);
           if (data.localidade) setCidade(data.localidade);
           if (data.bairro) setBairro(data.bairro);
@@ -119,11 +149,15 @@ export const RegisterPage: React.FC = () => {
         email,
         password,
         tipoPerfil,
+        eletricistaVinculadoId: eletricistaVinculadoId || undefined,
         cep: cep.replace(/\D/g, ''),
         estado,
         cidade,
         bairro
       });
+      localStorage.setItem('cliente_uf', estado);
+      localStorage.setItem('cliente_cidade', cidade);
+      localStorage.setItem('cliente_bairro', bairro);
       setEtapaVerificacao(true);
       setSucessoMensagem(
         'Ficha cadastral registrada! Enviamos um código de 6 dígitos por SMS para seu número e para seu e-mail.'

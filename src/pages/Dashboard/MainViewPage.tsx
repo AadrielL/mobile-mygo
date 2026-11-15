@@ -64,6 +64,22 @@ export const MainViewPage: React.FC = () => {
     return Number(valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   };
 
+  const meuCodigoRef = authService.getTenantId();
+  const meuLinkIndicacao = `${window.location.origin}/onboarding?ref=${encodeURIComponent(
+    meuCodigoRef
+  )}`;
+
+  const copiarLinkIndicacao = async () => {
+    try {
+      await navigator.clipboard.writeText(meuLinkIndicacao);
+      alert(
+        `🔗 Link Exclusivo de Indicação copiado!\n\nClientes que acessarem por este link ficarão vinculados exclusivamente a você (sem exibir concorrentes):\n${meuLinkIndicacao}`
+      );
+    } catch {
+      window.prompt('Copie seu link exclusivo de indicação:', meuLinkIndicacao);
+    }
+  };
+
   return (
     <div className="dashboard-container">
       <div
@@ -182,6 +198,50 @@ export const MainViewPage: React.FC = () => {
       )}
 
       <div style={{ marginBottom: '2rem' }}>
+        {/* M3-03: Card de Link Exclusivo de Indicação Protegido (?ref=codigo_eletricista) */}
+        <div
+          className="app-card"
+          style={{
+            marginBottom: '1.25rem',
+            border: '1px solid var(--accent-border)',
+            background: 'var(--bg-surface)',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: '0.85rem'
+          }}
+        >
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', marginBottom: '0.2rem' }}>
+              <span
+                className="material-icons"
+                style={{ fontSize: '18px', color: 'var(--accent-primary)' }}
+              >
+                link
+              </span>
+              <strong style={{ fontSize: '0.92rem', color: 'var(--text-main)' }}>
+                Meu Link Exclusivo de Indicação (Carteira Protegida)
+              </strong>
+              <span className="app-badge app-badge-amber">Anti-Concorrência</span>
+            </div>
+            <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', margin: 0 }}>
+              Clientes que acessarem pelo seu link entram direto no seu orçamento sem ver outros
+              profissionais.
+            </p>
+          </div>
+          <button
+            type="button"
+            className="app-btn app-btn-primary app-btn-sm"
+            onClick={copiarLinkIndicacao}
+          >
+            <span className="material-icons" style={{ fontSize: '16px' }}>
+              content_copy
+            </span>
+            <span>Copiar Meu Link (?ref=)</span>
+          </button>
+        </div>
+
         <div
           style={{
             display: 'flex',
