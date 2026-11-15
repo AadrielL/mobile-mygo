@@ -3,19 +3,80 @@ import { Link, useNavigate } from 'react-router-dom';
 import { authService } from '../../core/services/authService';
 import { SubmitButton } from '../../components/SubmitButton';
 
+function formatCpf(value: string): string {
+  const digits = value.replace(/\D/g, '').slice(0, 11);
+  if (digits.length <= 3) return digits;
+  if (digits.length <= 6) return `${digits.slice(0, 3)}.${digits.slice(3)}`;
+  if (digits.length <= 9) return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6)}`;
+  return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9, 11)}`;
+}
+
+function formatTelefone(value: string): string {
+  const digits = value.replace(/\D/g, '').slice(0, 11);
+  if (digits.length === 0) return '';
+  if (digits.length <= 2) return `(${digits}`;
+  if (digits.length <= 7) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7, 11)}`;
+}
+
+function formatCep(value: string): string {
+  const digits = value.replace(/\D/g, '').slice(0, 8);
+  if (digits.length <= 5) return digits;
+  return `${digits.slice(0, 5)}-${digits.slice(5, 8)}`;
+}
+
+const ESTADOS_UF = [
+  'AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO',
+  'MA', 'MT', 'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI',
+  'RJ', 'RN', 'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO'
+];
+
 export const RegisterPage: React.FC = () => {
   const [nome, setNome] = useState('');
+  const [cpf, setCpf] = useState('');
+  const [telefone, setTelefone] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [tipoPerfil, setTipoPerfil] = useState<'ELETRICISTA' | 'CLIENTE'>('ELETRICISTA');
 
+  // Geolocalização Regional
+  const [cep, setCep] = useState('');
+  const [estado, setEstado] = useState('TO');
+  const [cidade, setCidade] = useState('Palmas');
+  const [bairro, setBairro] = useState('');
+  const [buscandoCep, setBuscandoCep] = useState(false);
+
+  // Verificação E-mail + SMS
   const [etapaVerificacao, setEtapaVerificacao] = useState(false);
+  const [canalVerificacao, setCanalVerificacao] = useState<'EMAIL' | 'SMS'>('SMS');
   const [codigoVerificacao, setCodigoVerificacao] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [sucessoMensagem, setSucessoMensagem] = useState('');
 
   const navigate = useNavigate();
+
+  const handleCepChange = async (rawVal: string) => {
+    const formatted = formatCep(rawVal);
+    setCep(formatted);
+    const digits = rawVal.replace(/\D/g, '');
+    if (digits.length === 8) {
+      setBuscandoCep(true);
+      try {
+        const resp = await fetch(`https://viacep.com.br/ws/${digits}/json/`);
+        const data = await resp.json();
+        if (data && !data.erro) {
+          if (data.uf) setEstado(data.uf);
+          if (data.localidade) setCidade(data.localidade);
+          if (data.bairro) setBairro(data.bairro);
+        }
+      } catch {
+        // Permite preenchimento manual caso sem internet ou erro na busca de CEP
+      } finally {
+        setBuscandoCep(false);
+      }
+    }
+  };
 
   const onRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,8 +85,21 @@ export const RegisterPage: React.FC = () => {
     setErrorMessage('');
     setSucessoMensagem('');
 
-    if (!nome || !email || !password) {
-      setErrorMessage('Por favor, preencha todos os campos.');
+    const cpfDigits = cpf.replace(/\D/g, '');
+    const telDigits = telefone.replace(/\D/g, '');
+
+    if (!nome || !email || !password || !cpfDigits || !telDigits || !estado || !cidade || !bairro) {
+      setErrorMessage('Por favor, preencha toda a ficha cadastral (CPF, Telefone e Região).');
+      return;
+    }
+
+    if (cpfDigits.length !== 11) {
+      setErrorMessage('Informe um CPF válido com 11 dígitos.');
+      return;
+    }
+
+    if (telDigits.length < 10) {
+      setErrorMessage('Informe um número de celular válido com DDD.');
       return;
     }
 
@@ -40,17 +114,25 @@ export const RegisterPage: React.FC = () => {
     try {
       await authService.register({
         nome,
+        cpf: cpfDigits,
+        telefone: telDigits,
         email,
         password,
-        tipoPerfil
+        tipoPerfil,
+        cep: cep.replace(/\D/g, ''),
+        estado,
+        cidade,
+        bairro
       });
       setEtapaVerificacao(true);
-      setSucessoMensagem('Código de verificação enviado! Verifique sua caixa de entrada.');
+      setSucessoMensagem(
+        'Ficha cadastral registrada! Enviamos um código de 6 dígitos por SMS para seu número e para seu e-mail.'
+      );
     } catch (err: any) {
       if (err?.error && typeof err.error === 'string') {
         setErrorMessage(err.error);
       } else if (err?.status === 400) {
-        setErrorMessage('Dados inválidos ou e-mail já cadastrado.');
+        setErrorMessage('Dados inválidos ou usuário já cadastrado.');
       } else if (err?.status === 0) {
         setErrorMessage('Não foi possível conectar ao servidor.');
       } else {
@@ -66,7 +148,7 @@ export const RegisterPage: React.FC = () => {
     if (isSubmitting) return;
 
     if (!codigoVerificacao || codigoVerificacao.trim().length !== 6) {
-      setErrorMessage('Por favor, digite o código de 6 dígitos.');
+      setErrorMessage('Por favor, digite o código de 6 dígitos enviado para seu número/e-mail.');
       return;
     }
 
@@ -75,7 +157,7 @@ export const RegisterPage: React.FC = () => {
 
     try {
       await authService.verificarCodigo(email, codigoVerificacao.trim());
-      alert('⚡ Conta ativada com sucesso! Bem-vindo ao ecossistema AMORIS Tech.');
+      alert('⚡ Ficha cadastral e número autenticados com sucesso! Bem-vindo ao ecossistema MyGo.');
       navigate('/dashboard-main');
     } catch (err: any) {
       if (err?.error && typeof err.error === 'string') {
@@ -96,7 +178,7 @@ export const RegisterPage: React.FC = () => {
 
     try {
       await authService.reenviarCodigo(email);
-      setSucessoMensagem('Novo código enviado para o seu e-mail!');
+      setSucessoMensagem('Novo código enviado por SMS e E-mail!');
     } catch {
       setErrorMessage('Não foi possível reenviar o código agora. Tente em instantes.');
     } finally {
@@ -112,11 +194,11 @@ export const RegisterPage: React.FC = () => {
         background: 'var(--bg-main)',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: '1.25rem 0.85rem'
+        padding: '1.25rem 0.75rem'
       }}
     >
-      <div style={{ width: '100%', maxWidth: '480px' }}>
-        <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+      <div style={{ width: '100%', maxWidth: '520px' }}>
+        <div style={{ textAlign: 'center', marginBottom: '1.25rem' }}>
           <div
             style={{
               width: '48px',
@@ -128,7 +210,7 @@ export const RegisterPage: React.FC = () => {
               alignItems: 'center',
               justifyContent: 'center',
               color: 'var(--accent-primary)',
-              margin: '0 auto 0.85rem auto'
+              margin: '0 auto 0.75rem auto'
             }}
           >
             <span className="material-icons" style={{ fontSize: '26px' }}>
@@ -137,25 +219,26 @@ export const RegisterPage: React.FC = () => {
           </div>
           <h2
             style={{
-              fontSize: '1.4rem',
+              fontSize: '1.35rem',
               fontWeight: 800,
               color: 'var(--text-main)',
               marginBottom: '0.25rem'
             }}
           >
-            {etapaVerificacao ? 'Confirme seu E-mail' : 'Criar Conta AMORIS Tech'}
+            {etapaVerificacao ? 'Autenticar Número e Conta' : 'Ficha Cadastral MyGo'}
           </h2>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem' }}>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.86rem' }}>
             {etapaVerificacao
-              ? 'Enviamos um código de segurança de 6 dígitos para o seu endereço.'
-              : 'Plataforma inteligente de cálculos elétricos NBR 5410 e orçamentos.'}
+              ? 'Confirme o código de 6 dígitos enviado por SMS ou E-mail para validar sua identidade.'
+              : 'Cadastro completo com geolocalização para conectar clientes e eletricistas da mesma região.'}
           </p>
         </div>
 
         {!etapaVerificacao ? (
           <div className="app-card">
             <form onSubmit={onRegister}>
-              <div className="app-form-group" style={{ marginBottom: '1.25rem' }}>
+              {/* 1. TIPO DE PERFIL */}
+              <div className="app-form-group" style={{ marginBottom: '1.1rem' }}>
                 <label className="app-label">Tipo de Perfil</label>
                 <div
                   style={{
@@ -193,6 +276,26 @@ export const RegisterPage: React.FC = () => {
                 </div>
               </div>
 
+              {/* 2. DADOS PESSOAIS & CONTATO (CPF + TELEFONE + E-MAIL) */}
+              <div
+                style={{
+                  fontSize: '0.72rem',
+                  fontWeight: 800,
+                  color: 'var(--accent-primary)',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.06em',
+                  marginBottom: '0.65rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.35rem'
+                }}
+              >
+                <span className="material-icons" style={{ fontSize: '15px' }}>
+                  badge
+                </span>
+                <span>1. Identificação e Contato</span>
+              </div>
+
               <div className="app-form-group">
                 <label className="app-label">Nome Completo</label>
                 <input
@@ -203,6 +306,34 @@ export const RegisterPage: React.FC = () => {
                   required
                   className="app-input"
                 />
+              </div>
+
+              <div className="app-grid-2" style={{ gap: '0.75rem', marginBottom: '0.25rem' }}>
+                <div className="app-form-group">
+                  <label className="app-label">CPF</label>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    value={cpf}
+                    onChange={(e) => setCpf(formatCpf(e.target.value))}
+                    placeholder="000.000.000-00"
+                    required
+                    className="app-input"
+                  />
+                </div>
+
+                <div className="app-form-group">
+                  <label className="app-label">Celular / WhatsApp (com SMS)</label>
+                  <input
+                    type="tel"
+                    inputMode="numeric"
+                    value={telefone}
+                    onChange={(e) => setTelefone(formatTelefone(e.target.value))}
+                    placeholder="(63) 99999-0000"
+                    required
+                    className="app-input"
+                  />
+                </div>
               </div>
 
               <div className="app-form-group">
@@ -217,7 +348,88 @@ export const RegisterPage: React.FC = () => {
                 />
               </div>
 
-              <div className="app-form-group">
+              {/* 3. REGIÃO & GEOLOCALIZAÇÃO */}
+              <div
+                style={{
+                  fontSize: '0.72rem',
+                  fontWeight: 800,
+                  color: 'var(--accent-primary)',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.06em',
+                  margin: '1rem 0 0.65rem 0',
+                  paddingTop: '0.85rem',
+                  borderTop: '1px solid var(--border-subtle)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.35rem'
+                }}
+              >
+                <span className="material-icons" style={{ fontSize: '15px' }}>
+                  place
+                </span>
+                <span>2. Geolocalização e Região (Match Eletricista/Cliente)</span>
+              </div>
+
+              <div className="app-grid-2" style={{ gap: '0.75rem', marginBottom: '0.25rem' }}>
+                <div className="app-form-group">
+                  <label className="app-label">
+                    CEP {buscandoCep && <span style={{ color: 'var(--accent-primary)' }}>(Buscando...)</span>}
+                  </label>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    value={cep}
+                    onChange={(e) => handleCepChange(e.target.value)}
+                    placeholder="77000-000"
+                    className="app-input"
+                  />
+                </div>
+
+                <div className="app-form-group">
+                  <label className="app-label">Estado (UF)</label>
+                  <select
+                    value={estado}
+                    onChange={(e) => setEstado(e.target.value)}
+                    required
+                    className="app-select"
+                  >
+                    {ESTADOS_UF.map((uf) => (
+                      <option key={uf} value={uf}>
+                        {uf}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="app-grid-2" style={{ gap: '0.75rem', marginBottom: '0.25rem' }}>
+                <div className="app-form-group">
+                  <label className="app-label">Cidade</label>
+                  <input
+                    type="text"
+                    value={cidade}
+                    onChange={(e) => setCidade(e.target.value)}
+                    placeholder="Ex: Palmas"
+                    required
+                    className="app-input"
+                  />
+                </div>
+
+                <div className="app-form-group">
+                  <label className="app-label">Bairro / Quadra</label>
+                  <input
+                    type="text"
+                    value={bairro}
+                    onChange={(e) => setBairro(e.target.value)}
+                    placeholder="Ex: Plano Diretor Sul / ARSE"
+                    required
+                    className="app-input"
+                  />
+                </div>
+              </div>
+
+              {/* 4. SENHA DE ACESSO */}
+              <div className="app-form-group" style={{ marginTop: '0.35rem' }}>
                 <label className="app-label">Senha de Acesso (mínimo 8 caracteres)</label>
                 <input
                   type="password"
@@ -259,15 +471,15 @@ export const RegisterPage: React.FC = () => {
                     marginTop: '1px'
                   }}
                 >
-                  verified_user
+                  phonelink_lock
                 </span>
                 <div>
                   <span className="app-badge app-badge-amber" style={{ marginBottom: '0.35rem' }}>
-                    CONTA SEGURA
+                    VERIFICAÇÃO DUPLA (SMS + E-MAIL)
                   </span>
-                  <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: 0 }}>
-                    Um código de verificação será enviado para confirmar a autenticidade do seu
-                    e-mail.
+                  <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', margin: 0 }}>
+                    Enviaremos um código de 6 dígitos para o seu celular e e-mail para autenticar
+                    seu número e ativar o radar de geolocalização da sua região.
                   </p>
                 </div>
               </div>
@@ -275,11 +487,11 @@ export const RegisterPage: React.FC = () => {
               <SubmitButton
                 type="submit"
                 isSubmitting={isSubmitting}
-                loadingText="Enviando código..."
-                icon="mail"
+                loadingText="Validando Ficha e Enviando SMS..."
+                icon="sms"
                 style={{ width: '100%' }}
               >
-                <span>Continuar e Receber Código</span>
+                <span>Salvar Ficha e Receber Código SMS</span>
               </SubmitButton>
             </form>
 
@@ -326,20 +538,68 @@ export const RegisterPage: React.FC = () => {
           </div>
         ) : (
           <div className="app-card">
-            <div style={{ textAlign: 'center', marginBottom: '1.25rem' }}>
+            <div style={{ textAlign: 'center', marginBottom: '1.1rem' }}>
               <span
                 className="material-icons"
                 style={{
-                  fontSize: '48px',
+                  fontSize: '46px',
                   color: 'var(--accent-primary)',
-                  marginBottom: '0.5rem'
+                  marginBottom: '0.35rem'
                 }}
               >
-                mark_email_read
+                {canalVerificacao === 'SMS' ? 'sms' : 'mark_email_read'}
               </span>
-              <p className="break-words" style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-                Código enviado para: <strong style={{ color: 'var(--text-main)' }}>{email}</strong>
+
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: '1fr 1fr',
+                  gap: '0.5rem',
+                  margin: '0.65rem 0 0.85rem 0'
+                }}
+              >
+                <button
+                  type="button"
+                  className={`app-btn app-btn-sm ${
+                    canalVerificacao === 'SMS' ? 'app-btn-primary' : 'app-btn-secondary'
+                  }`}
+                  onClick={() => setCanalVerificacao('SMS')}
+                >
+                  <span className="material-icons" style={{ fontSize: '15px' }}>
+                    smartphone
+                  </span>
+                  <span>Código via SMS</span>
+                </button>
+                <button
+                  type="button"
+                  className={`app-btn app-btn-sm ${
+                    canalVerificacao === 'EMAIL' ? 'app-btn-primary' : 'app-btn-secondary'
+                  }`}
+                  onClick={() => setCanalVerificacao('EMAIL')}
+                >
+                  <span className="material-icons" style={{ fontSize: '15px' }}>
+                    mail
+                  </span>
+                  <span>Código via E-mail</span>
+                </button>
+              </div>
+
+              <p className="break-words" style={{ fontSize: '0.86rem', color: 'var(--text-secondary)' }}>
+                {canalVerificacao === 'SMS' ? (
+                  <>
+                    Código SMS enviado para:{' '}
+                    <strong style={{ color: 'var(--text-main)' }}>{telefone}</strong>
+                  </>
+                ) : (
+                  <>
+                    Código enviado para:{' '}
+                    <strong style={{ color: 'var(--text-main)' }}>{email}</strong>
+                  </>
+                )}
               </p>
+              <span className="app-badge app-badge-muted" style={{ marginTop: '0.35rem' }}>
+                📍 Região: {bairro} — {cidade}/{estado}
+              </span>
             </div>
 
             {sucessoMensagem && (
@@ -350,9 +610,9 @@ export const RegisterPage: React.FC = () => {
                   border: '1px solid var(--status-success-border)',
                   padding: '0.75rem 1rem',
                   borderRadius: 'var(--radius-md)',
-                  fontSize: '0.85rem',
+                  fontSize: '0.82rem',
                   fontWeight: 600,
-                  marginBottom: '1.25rem',
+                  marginBottom: '1.15rem',
                   textAlign: 'center'
                 }}
               >
@@ -363,7 +623,7 @@ export const RegisterPage: React.FC = () => {
             <form onSubmit={onVerificarCodigo}>
               <div className="app-form-group" style={{ textAlign: 'center' }}>
                 <label className="app-label" style={{ display: 'block', marginBottom: '0.5rem' }}>
-                  Digite o código de 6 dígitos
+                  Digite o código de 6 dígitos ({canalVerificacao})
                 </label>
                 <input
                   type="text"
@@ -387,12 +647,12 @@ export const RegisterPage: React.FC = () => {
               <SubmitButton
                 type="submit"
                 isSubmitting={isSubmitting}
-                loadingText="Verificando..."
-                icon="check_circle"
+                loadingText="Autenticando..."
+                icon="verified"
                 disabled={codigoVerificacao.length < 6}
                 style={{ width: '100%', marginTop: '0.75rem' }}
               >
-                <span>Ativar Minha Conta</span>
+                <span>Validar Número e Ativar Conta</span>
               </SubmitButton>
 
               <div
@@ -413,7 +673,7 @@ export const RegisterPage: React.FC = () => {
                   <span className="material-icons" style={{ fontSize: '15px' }}>
                     arrow_back
                   </span>
-                  <span>Corrigir e-mail</span>
+                  <span>Editar Ficha</span>
                 </button>
 
                 <button
@@ -425,7 +685,7 @@ export const RegisterPage: React.FC = () => {
                   <span className="material-icons" style={{ fontSize: '15px' }}>
                     refresh
                   </span>
-                  <span>Reenviar Código</span>
+                  <span>Reenviar SMS / E-mail</span>
                 </button>
               </div>
             </form>

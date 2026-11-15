@@ -10,6 +10,9 @@ export interface ParceiroEletricista {
   nome: string;
   tenantId: string;
   regiao: string;
+  estado?: string;
+  cidade?: string;
+  bairro?: string;
   avaliacao: number;
   totalAvaliacoes: number;
   especialidades: string[];
@@ -56,13 +59,23 @@ export const ParceirosPage: React.FC = () => {
   const parceirosFiltrados = React.useMemo(() => {
     let lista = listaParceiros;
     if (filtroRegiao !== 'TODAS') {
-      lista = lista.filter((p) => p.regiao === filtroRegiao);
+      const regTerm = filtroRegiao.toLowerCase();
+      lista = lista.filter(
+        (p) =>
+          (p.regiao || '').toLowerCase().includes(regTerm) ||
+          (p.bairro || '').toLowerCase().includes(regTerm) ||
+          (p.cidade || '').toLowerCase().includes(regTerm)
+      );
     }
     if (buscaDebounced.trim()) {
       const termo = buscaDebounced.toLowerCase();
       lista = lista.filter(
         (p) =>
           p.nome.toLowerCase().includes(termo) ||
+          (p.regiao || '').toLowerCase().includes(termo) ||
+          (p.bairro || '').toLowerCase().includes(termo) ||
+          (p.cidade || '').toLowerCase().includes(termo) ||
+          (p.estado || '').toLowerCase().includes(termo) ||
           (p.especialidades || []).some((e) => e.toLowerCase().includes(termo))
       );
     }

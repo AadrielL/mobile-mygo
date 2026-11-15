@@ -15,9 +15,11 @@ export const HistoricoPage: React.FC = () => {
   const [verLixeira, setVerLixeira] = useState<boolean>(false);
   const [actionSubmittingId, setActionSubmittingId] = useState<string | null>(null);
 
-  // Filtro com debounce de 400ms (Prompt 03)
+  // Filtro com debounce de 400ms (Prompt 03) + Período (Semanal / Mensal / Todos)
   const [termoBusca, setTermoBusca] = useState<string>('');
   const [filtroStatus, setFiltroStatus] = useState<string>('TODOS');
+  const [filtroPeriodo, setFiltroPeriodo] = useState<'TODOS' | 'SEMANAL' | 'MENSAL'>('TODOS');
+  const [mostrarLogClientes, setMostrarLogClientes] = useState<boolean>(false);
   const termoDebounced = useDebounce(termoBusca, 400);
 
   // Modais
@@ -65,15 +67,74 @@ export const HistoricoPage: React.FC = () => {
   };
 
   const orcamentosFiltrados = useMemo(() => {
+    const agora = new Date();
     return listaOrcamentos.filter((orc) => {
       const matchStatus = filtroStatus === 'TODOS' || orc.status === filtroStatus;
       const matchTexto =
         !termoDebounced.trim() ||
         String(orc.clienteNome).toLowerCase().includes(termoDebounced.toLowerCase()) ||
         String(orc.status).toLowerCase().includes(termoDebounced.toLowerCase());
-      return matchStatus && matchTexto;
+
+      let matchPeriodo = true;
+      if (filtroPeriodo !== 'TODOS' && orc.dataExibicao) {
+        const dataOrc = new Date(orc.dataExibicao);
+        if (!isNaN(dataOrc.getTime())) {
+          const diffDias = (agora.getTime() - dataOrc.getTime()) / (1000 * 60 * 60 * 24);
+          if (filtroPeriodo === 'SEMANAL') matchPeriodo = diffDias <= 7;
+          if (filtroPeriodo === 'MENSAL') matchPeriodo = diffDias <= 30;
+        }
+      }
+
+      return matchStatus && matchTexto && matchPeriodo;
     });
-  }, [listaOrcamentos, filtroStatus, termoDebounced]);
+  }, [listaOrcamentos, filtroStatus, termoDebounced, filtroPeriodo]);
+
+  // Log consolidado por cliente: quantos orçamentos enviados, quantos efetivados e valor convertido
+  const resumoPorCliente = useMemo(() => {
+    const mapa: Record<
+      string,
+      {
+        cliente: string;
+        enviados: number;
+        efetivados: number;
+        pendentes: number;
+        valorEfetivado: number;
+        ultimaData: any;
+      }
+    > = {};
+
+    orcamentosFiltrados.forEach((orc) => {
+      const chave = String(orc.clienteNome || 'Cliente sem nome').trim();
+      if (!mapa[chave]) {
+        mapa[chave] = {
+          cliente: chave,
+          enviados: 0,
+          efetivados: 0,
+          pendentes: 0,
+          valorEfetivado: 0,
+          ultimaData: orc.dataExibicao
+        };
+      }
+      mapa[chave].enviados += 1;
+      if (orc.status === 'ACEITO') {
+        mapa[chave].efetivados += 1;
+        mapa[chave].valorEfetivado += Number(orc.valorExibicao || 0);
+      } else {
+        mapa[chave].pendentes += 1;
+      }
+    });
+
+    return Object.values(mapa).sort((a, b) => b.efetivados - a.efetivados || b.enviados - a.enviados);
+  }, [orcamentosFiltrados]);
+
+  const metricasPeriodo = useMemo(() => {
+    const totalEnviados = orcamentosFiltrados.length;
+    const totalEfetivados = orcamentosFiltrados.filter((o) => o.status === 'ACEITO').length;
+    const valorTotalEfetivado = orcamentosFiltrados
+      .filter((o) => o.status === 'ACEITO')
+      .reduce((acc, o) => acc + Number(o.valorExibicao || 0), 0);
+    return { totalEnviados, totalEfetivados, valorTotalEfetivado };
+  }, [orcamentosFiltrados]);
 
   const confirmarRecusar = async (id: string) => {
     if (actionSubmittingId) return;
@@ -278,6 +339,202 @@ export const HistoricoPage: React.FC = () => {
         </div>
       </div>
 
+      {/* Painel de Log de Conversão (Semanal / Mensal) e Apontamento de Efetivação */}
+      {!verLixeira && (
+        <div
+          style={{
+            background: 'var(--bg-surface)',
+            border: '1px solid var(--border-subtle)',
+            borderRadius: 'var(--radius-lg)',
+            padding: '1rem',
+            marginBottom: '1.25rem'
+          }}
+        >
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: '0.75rem',
+              marginBottom: '0.85rem'
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', flexWrap: 'wrap' }}>
+              <span
+                className="material-icons"
+                style={{ color: 'var(--accent-primary)', fontSize: '18px' }}
+              >
+                insights
+              </span>
+              <strong style={{ fontSize: '0.9rem', color: 'var(--text-main)' }}>
+                Log de Vendas & Efetivação por Cliente
+              </strong>
+            </div>
+
+            <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                className={`app-btn app-btn-sm ${
+                  filtroPeriodo === 'TODOS' ? 'app-btn-primary' : 'app-btn-secondary'
+                }`}
+                onClick={() => setFiltroPeriodo('TODOS')}
+              >
+                <span>Geral</span>
+              </button>
+              <button
+                type="button"
+                className={`app-btn app-btn-sm ${
+                  filtroPeriodo === 'SEMANAL' ? 'app-btn-primary' : 'app-btn-secondary'
+                }`}
+                onClick={() => setFiltroPeriodo('SEMANAL')}
+              >
+                <span>Semanal (7d)</span>
+              </button>
+              <button
+                type="button"
+                className={`app-btn app-btn-sm ${
+                  filtroPeriodo === 'MENSAL' ? 'app-btn-primary' : 'app-btn-secondary'
+                }`}
+                onClick={() => setFiltroPeriodo('MENSAL')}
+              >
+                <span>Mensal (30d)</span>
+              </button>
+              <button
+                type="button"
+                className={`app-btn app-btn-sm ${
+                  mostrarLogClientes ? 'app-btn-success' : 'app-btn-outline'
+                }`}
+                onClick={() => setMostrarLogClientes((prev) => !prev)}
+              >
+                <span className="material-icons" style={{ fontSize: '15px' }}>
+                  people_alt
+                </span>
+                <span>{mostrarLogClientes ? 'Ocultar Log por Cliente' : 'Ver Log por Cliente'}</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="app-grid-3" style={{ gap: '0.75rem' }}>
+            <div
+              style={{
+                padding: '0.75rem',
+                background: 'var(--bg-card)',
+                border: '1px solid var(--border-subtle)',
+                borderRadius: 'var(--radius-md)'
+              }}
+            >
+              <small style={{ color: 'var(--text-muted)', display: 'block', fontSize: '0.72rem' }}>
+                ORÇAMENTOS ENVIADOS ({filtroPeriodo})
+              </small>
+              <strong
+                style={{
+                  fontSize: '1.25rem',
+                  color: 'var(--text-main)',
+                  fontFamily: "'JetBrains Mono', monospace"
+                }}
+              >
+                {metricasPeriodo.totalEnviados}
+              </strong>
+            </div>
+
+            <div
+              style={{
+                padding: '0.75rem',
+                background: 'var(--bg-card)',
+                border: '1px solid var(--status-success-border)',
+                borderRadius: 'var(--radius-md)'
+              }}
+            >
+              <small style={{ color: 'var(--text-muted)', display: 'block', fontSize: '0.72rem' }}>
+                COMPRAS EFETIVADAS (APROVADOS)
+              </small>
+              <strong
+                style={{
+                  fontSize: '1.25rem',
+                  color: 'var(--status-success)',
+                  fontFamily: "'JetBrains Mono', monospace"
+                }}
+              >
+                {metricasPeriodo.totalEfetivados}
+              </strong>
+            </div>
+
+            <div
+              style={{
+                padding: '0.75rem',
+                background: 'var(--bg-card)',
+                border: '1px solid var(--accent-border)',
+                borderRadius: 'var(--radius-md)'
+              }}
+            >
+              <small style={{ color: 'var(--text-muted)', display: 'block', fontSize: '0.72rem' }}>
+                VOLUME EFETIVADO NO PERÍODO
+              </small>
+              <strong
+                style={{
+                  fontSize: '1.25rem',
+                  color: 'var(--accent-primary)',
+                  fontFamily: "'JetBrains Mono', monospace"
+                }}
+              >
+                {formatarMoeda(metricasPeriodo.valorTotalEfetivado)}
+              </strong>
+            </div>
+          </div>
+
+          {mostrarLogClientes && (
+            <div style={{ marginTop: '1rem' }}>
+              <h4
+                style={{
+                  fontSize: '0.78rem',
+                  textTransform: 'uppercase',
+                  color: 'var(--accent-primary)',
+                  marginBottom: '0.6rem',
+                  letterSpacing: '0.05em'
+                }}
+              >
+                Histórico Consolidado por Cliente ({resumoPorCliente.length})
+              </h4>
+              <div className="mobile-only-cards" style={{ display: 'flex' }}>
+                {resumoPorCliente.map((cli) => (
+                  <div key={cli.cliente} className="mobile-stack-card">
+                    <div className="mobile-stack-row">
+                      <strong className="break-words" style={{ color: 'var(--text-main)' }}>
+                        {cli.cliente}
+                      </strong>
+                      <span
+                        className={`app-badge ${
+                          cli.efetivados > 0 ? 'app-badge-success' : 'app-badge-amber'
+                        }`}
+                      >
+                        {cli.efetivados > 0
+                          ? `✓ ${cli.efetivados} Efetivada(s)`
+                          : 'Aguardando Efetivação'}
+                      </span>
+                    </div>
+                    <div className="mobile-stack-row" style={{ fontSize: '0.82rem' }}>
+                      <span style={{ color: 'var(--text-secondary)' }}>
+                        Orçamentos enviados: <strong>{cli.enviados}</strong> | Pendentes:{' '}
+                        <strong>{cli.pendentes}</strong>
+                      </span>
+                      <strong
+                        style={{
+                          color: 'var(--status-success)',
+                          fontFamily: "'JetBrains Mono', monospace"
+                        }}
+                      >
+                        Total Fechado: {formatarMoeda(cli.valorEfetivado)}
+                      </strong>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Barra de Busca e Filtro com Debounce de 400ms (Prompt 03) */}
       <div
         style={{
@@ -299,9 +556,9 @@ export const HistoricoPage: React.FC = () => {
           value={filtroStatus}
           onChange={(e) => setFiltroStatus(e.target.value)}
         >
-          <option value="TODOS">Todos os Status</option>
-          <option value="PENDENTE">Pendentes</option>
-          <option value="ACEITO">Aceitos / Aprovados</option>
+          <option value="TODOS">Todos os Status (Efetivados + Pendentes)</option>
+          <option value="PENDENTE">Apenas Não Efetivados (Pendentes)</option>
+          <option value="ACEITO">Apenas Efetivados (Aceitos / Comprados)</option>
         </select>
       </div>
 
@@ -579,30 +836,37 @@ export const HistoricoPage: React.FC = () => {
                           <span>Materiais</span>
                         </SubmitButton>
 
+                        <SubmitButton
+                          type="button"
+                          variant={orc.status === 'ACEITO' ? 'secondary' : 'primary'}
+                          size="sm"
+                          isSubmitting={busy}
+                          loadingText="Apontando..."
+                          onClick={() =>
+                            alterarStatus(orc.id, orc.status === 'ACEITO' ? 'PENDENTE' : 'ACEITO')
+                          }
+                          style={{ flex: '1 1 100%' }}
+                        >
+                          <span className="material-icons" style={{ fontSize: '16px' }}>
+                            {orc.status === 'ACEITO' ? 'verified' : 'check_circle_outline'}
+                          </span>
+                          <span>
+                            {orc.status === 'ACEITO'
+                              ? 'Compra Efetivada (Marcar Pendente)'
+                              : 'Apontar como Efetivado (Venda Fechada)'}
+                          </span>
+                        </SubmitButton>
+
                         {userRole === 'ADMIN' && (
                           <>
                             <button
                               type="button"
-                              className="app-btn app-btn-primary app-btn-sm"
+                              className="app-btn app-btn-secondary app-btn-sm"
                               onClick={() => navigate(`/levantamento?orcamentoId=${orc.id}`)}
                               style={{ flex: '1 1 130px' }}
                             >
                               <span>Lista Técnica</span>
                             </button>
-                            <SubmitButton
-                              type="button"
-                              variant="secondary"
-                              size="sm"
-                              isSubmitting={busy}
-                              loadingText="Salvando..."
-                              className="text-success"
-                              onClick={() => alterarStatus(orc.id, 'ACEITO')}
-                            >
-                              <span className="material-icons" style={{ fontSize: '15px' }}>
-                                check
-                              </span>
-                              <span>Aceitar</span>
-                            </SubmitButton>
                             <SubmitButton
                               type="button"
                               variant="danger"
