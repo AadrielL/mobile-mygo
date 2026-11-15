@@ -275,13 +275,27 @@ export const HistoricoPage: React.FC = () => {
     return Number(valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   };
 
-  const cotarCapitalEletrica = () => {
+  const cotarCapitalEletrica = async () => {
     if (!detalheMaterial) return;
-    const msg = apiService.gerarMensagemCapitalEletrica(
-      detalheMaterial.clienteNome || 'Cliente',
-      detalheMaterial.itens || []
-    );
-    window.open(`https://wa.me/556333222120?text=${encodeURIComponent(msg)}`, '_blank');
+    await materialService.registrarLogCotacaoEAbrirWhatsApp({
+      orcamentoId: detalheMaterial.orcamentoId || null,
+      clienteNome: detalheMaterial.clienteNome || 'Cliente',
+      itens: detalheMaterial.itens || []
+    });
+  };
+
+  const copiarLinkAceiteCliente = async (orc: any) => {
+    if (!orc?.id) return;
+    const link = `${window.location.origin}/proposta/${orc.id}`;
+    try {
+      await navigator.clipboard.writeText(link);
+      alert(`🔗 Link de aprovação com 1 clique copiado!\n\n${link}`);
+    } catch {
+      window.prompt('Copie o link da proposta para enviar ao cliente:', link);
+    }
+    if (orc.status === 'PENDENTE' || orc.status === 'PENDENTE_ADMIN') {
+      alterarStatus(orc.id, 'ENVIADO');
+    }
   };
 
   return (
@@ -556,9 +570,11 @@ export const HistoricoPage: React.FC = () => {
           value={filtroStatus}
           onChange={(e) => setFiltroStatus(e.target.value)}
         >
-          <option value="TODOS">Todos os Status (Efetivados + Pendentes)</option>
-          <option value="PENDENTE">Apenas Não Efetivados (Pendentes)</option>
-          <option value="ACEITO">Apenas Efetivados (Aceitos / Comprados)</option>
+          <option value="TODOS">Todos os Status (Pendente, Enviado, Aceito, Recusado)</option>
+          <option value="PENDENTE">Pendentes</option>
+          <option value="ENVIADO">Enviados ao Cliente</option>
+          <option value="ACEITO">Aceitos / Efetivados</option>
+          <option value="RECUSADO">Recusados</option>
         </select>
       </div>
 
@@ -835,6 +851,21 @@ export const HistoricoPage: React.FC = () => {
                           </span>
                           <span>Materiais</span>
                         </SubmitButton>
+
+                        <button
+                          type="button"
+                          className="app-btn app-btn-secondary app-btn-sm"
+                          onClick={() => copiarLinkAceiteCliente(orc)}
+                          style={{ flex: '1 1 100%' }}
+                        >
+                          <span
+                            className="material-icons"
+                            style={{ fontSize: '15px', color: 'var(--status-info)' }}
+                          >
+                            share
+                          </span>
+                          <span>Gerar Link de Aceite 1-Clique (Cliente)</span>
+                        </button>
 
                         <SubmitButton
                           type="button"

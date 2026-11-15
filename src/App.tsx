@@ -14,6 +14,7 @@ import { HistoricoPage } from './pages/Historico/HistoricoPage';
 import { LevantamentoPage } from './pages/Levantamento/LevantamentoPage';
 import { ConfigPrecosPage } from './pages/ConfigPrecos/ConfigPrecosPage';
 import { ReportsPage } from './pages/Reports/ReportsPage';
+import { PropostaClientePage } from './pages/Proposta/PropostaClientePage';
 
 export const App: React.FC = () => {
   return (
@@ -25,6 +26,7 @@ export const App: React.FC = () => {
           <Route path="/parceiros" element={<ParceirosPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/proposta/:id" element={<PropostaClientePage />} />
 
           <Route
             path="/assinatura"

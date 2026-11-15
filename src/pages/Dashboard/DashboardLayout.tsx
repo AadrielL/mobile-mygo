@@ -74,7 +74,7 @@ export const DashboardLayout: React.FC = () => {
                   bolt
                 </span>
                 <span>
-                  {stats.budgetsToday || 0}/{stats.dailyLimit || 3}{' '}
+                  {stats.budgetsToday || 0}/{stats.dailyLimit || 15}{' '}
                   <span className="hide-mobile">({stats.planType || 'FREE'})</span>
                 </span>
               </div>

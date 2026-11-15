@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiService } from '../../core/services/apiService';
+import { materialService } from '../../core/services/materialService';
+import { dashboardService } from '../../core/services/dashboardService';
 import { useDebounce } from '../../core/hooks/useDebounce';
 import { SubmitButton } from '../../components/SubmitButton';
 import './QuizPage.css';
@@ -8,6 +10,8 @@ import './QuizPage.css';
 interface ServicoExtraUI {
   id?: number;
   nome: string;
+  unidade?: string;
+  materiaisSugeridos?: string;
   valor: number;
   selecionado: boolean;
   quantidade: number;
@@ -57,6 +61,8 @@ export const QuizPage: React.FC = () => {
             servicos.map((s: any) => ({
               id: s.id,
               nome: s.nome,
+              unidade: s.unidade || 'UN',
+              materiaisSugeridos: s.materiaisSugeridos || '',
               valor: s.valor,
               selecionado: false,
               quantidade: 1
@@ -141,7 +147,7 @@ export const QuizPage: React.FC = () => {
     } catch (err: any) {
       if (err?.status === 429) {
         alert(
-          '🚫 Limite diário atingido!\n\nVocê atingiu seu limite diário gratuito de 3 requisições. Volte amanhã ou assine o plano PRO!'
+          '🚫 Limite diário atingido!\n\nVocê atingiu seu limite diário gratuito de 15 orçamentos/dia. Volte amanhã ou assine o plano PRO!'
         );
         fecharQuiz();
         navigate('/assinatura');
@@ -174,29 +180,47 @@ export const QuizPage: React.FC = () => {
     }
   };
 
-  const cotarCapitalEletrica = () => {
+  const cotarCapitalEletrica = async () => {
     if (!resultadoCalculo) return;
     const nome = nomeCliente || 'Cliente';
     const total = (
       (resultadoCalculo.valorTotalMaoDeObra || 0) + (resultadoCalculo.custoLogistica || 0)
     ).toFixed(2);
     const msg =
-      `⚡ *SOLICITAÇÃO DE COTAÇÃO — CAPITAL ELÉTRICA (PALMAS/TO)*\n` +
+      `⚡ *SOLICITAÇÃO DE COTAÇÃO DE PROJETO*\n` +
       `Cliente / Projeto: *${nome}*\n` +
       `Mão de Obra Estimada: *R$ ${total}*\n` +
       `-------------------------------------------\n` +
-      `Olá Capital Elétrica! Gostaria de cotar a lista de materiais para este projeto elétrico dimensionado no AMORIS Tech (NBR 5410).`;
-    window.open(`https://wa.me/556333222120?text=${encodeURIComponent(msg)}`, '_blank');
+      `Olá! Gostaria de cotar a lista de materiais para este projeto elétrico dimensionado no MyGo (NBR 5410).`;
+
+    await materialService.registrarLogCotacaoEAbrirWhatsApp({
+      orcamentoId: resultadoCalculo.id,
+      clienteNome: nome,
+      itens: [],
+      mensagemCustomizada: msg
+    });
   };
 
-  const enviarWhatsApp = () => {
+  const enviarWhatsApp = async () => {
     if (!numeroWhatsApp || !resultadoCalculo) return;
     const nome = nomeCliente || 'Cliente';
     const total = (
       (resultadoCalculo.valorTotalMaoDeObra || 0) + (resultadoCalculo.custoLogistica || 0)
     ).toFixed(2);
     const telefone = numeroWhatsApp.replace(/\D/g, '');
-    const msg = `Olá! O orçamento elétrico para o projeto "${nome}" ficou no valor estimado de R$ ${total}.\nPara mais detalhes, entre em contato.`;
+    const linkAceite = resultadoCalculo.id
+      ? `${window.location.origin}/proposta/${resultadoCalculo.id}`
+      : '';
+
+    if (resultadoCalculo.id) {
+      dashboardService.alterarStatus(resultadoCalculo.id, 'ENVIADO').catch(() => {});
+    }
+
+    const msg =
+      `Olá! O orçamento elétrico para o projeto *${nome}* ficou no valor estimado de *R$ ${total}*.\n\n` +
+      (linkAceite
+        ? `👉 *Visualize e aprove a proposta com 1 clique aqui:*\n${linkAceite}`
+        : `Para mais detalhes, entre em contato.`);
     window.open(`https://wa.me/55${telefone}?text=${encodeURIComponent(msg)}`, '_blank');
   };
 

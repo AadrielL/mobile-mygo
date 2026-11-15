@@ -21,7 +21,13 @@ export const ConfigPrecosPage: React.FC = () => {
   });
 
   const [servicosExtras, setServicosExtras] = useState<any[]>([]);
-  const [novoServico, setNovoServico] = useState({ nome: '', valor: 0, ativo: true });
+  const [novoServico, setNovoServico] = useState({
+    nome: '',
+    unidade: 'UN',
+    valor: 0,
+    materiaisSugeridos: '',
+    ativo: true
+  });
 
   useEffect(() => {
     carregarDados();
@@ -61,12 +67,21 @@ export const ConfigPrecosPage: React.FC = () => {
 
   const adicionarExtra = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isAddingExtra || !novoServico.nome.trim() || novoServico.valor <= 0) return;
+    if (isAddingExtra || !novoServico.nome.trim() || novoServico.valor < 0) return;
 
     setIsAddingExtra(true);
     try {
-      await apiService.adicionarServicoExtra(novoServico);
-      setNovoServico({ nome: '', valor: 0, ativo: true });
+      await apiService.adicionarServicoExtra({
+        ...novoServico,
+        valor: Math.max(0, Number(novoServico.valor || 0))
+      });
+      setNovoServico({
+        nome: '',
+        unidade: 'UN',
+        valor: 0,
+        materiaisSugeridos: '',
+        ativo: true
+      });
       await carregarDados();
     } catch {
       alert('Erro ao adicionar serviço extra.');
@@ -332,16 +347,48 @@ export const ConfigPrecosPage: React.FC = () => {
                     onChange={(e) => setNovoServico({ ...novoServico, nome: e.target.value })}
                   />
                 </div>
+                <div className="app-grid-2" style={{ gap: '0.75rem', marginBottom: '0.75rem' }}>
+                  <div className="app-form-group" style={{ margin: 0 }}>
+                    <label className="app-label">Unidade</label>
+                    <select
+                      className="app-select"
+                      value={novoServico.unidade}
+                      onChange={(e) => setNovoServico({ ...novoServico, unidade: e.target.value })}
+                    >
+                      <option value="UN">Unidade (UN)</option>
+                      <option value="PT">Ponto (PT)</option>
+                      <option value="M">Metro (M)</option>
+                      <option value="M2">Metro² (M²)</option>
+                      <option value="KIT">Kit Completo (KIT)</option>
+                    </select>
+                  </div>
+                  <div className="app-form-group" style={{ margin: 0 }}>
+                    <label className="app-label">Mão de Obra (R$)</label>
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      min={0}
+                      className="app-input"
+                      placeholder="0.00"
+                      value={novoServico.valor || ''}
+                      onChange={(e) =>
+                        setNovoServico({
+                          ...novoServico,
+                          valor: Math.max(0, Number(e.target.value))
+                        })
+                      }
+                    />
+                  </div>
+                </div>
                 <div className="app-form-group">
-                  <label className="app-label">Valor Padrão (R$)</label>
+                  <label className="app-label">Lista Sugerida de Materiais Vinculados</label>
                   <input
-                    type="number"
-                    inputMode="decimal"
+                    type="text"
                     className="app-input"
-                    placeholder="0.00"
-                    value={novoServico.valor || ''}
+                    placeholder="Ex: 2x Conector Wago, 3m Cabo 1.5mm², Suporte"
+                    value={novoServico.materiaisSugeridos}
                     onChange={(e) =>
-                      setNovoServico({ ...novoServico, valor: Number(e.target.value) })
+                      setNovoServico({ ...novoServico, materiaisSugeridos: e.target.value })
                     }
                   />
                 </div>
@@ -353,7 +400,7 @@ export const ConfigPrecosPage: React.FC = () => {
                   icon="add"
                   style={{ width: '100%' }}
                 >
-                  <span>Adicionar à Tabela</span>
+                  <span>Adicionar à Tabela e Calculadora</span>
                 </SubmitButton>
               </form>
 
@@ -427,10 +474,18 @@ export const ConfigPrecosPage: React.FC = () => {
                 {servicosExtras.map((s) => (
                   <div key={s.id || s.nome} className="mobile-stack-card">
                     <div className="mobile-stack-row" style={{ alignItems: 'center' }}>
-                      <div>
+                    <div>
                         <strong className="break-words" style={{ color: 'var(--text-main)' }}>
-                          {s.nome}
+                          {s.nome}{' '}
+                          <span className="app-badge app-badge-muted">
+                            {s.unidade || 'UN'}
+                          </span>
                         </strong>
+                        {s.materiaisSugeridos && (
+                          <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '3px' }}>
+                            Materiais: {s.materiaisSugeridos}
+                          </p>
+                        )}
                         <div
                           style={{
                             color: 'var(--accent-primary)',

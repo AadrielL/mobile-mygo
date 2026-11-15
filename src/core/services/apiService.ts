@@ -1,5 +1,6 @@
 import { httpClient } from '../httpClient';
 import { environment } from '../../config/environment';
+import { materialService } from './materialService';
 
 const URL_ORCAMENTOS = `${environment.apiCalculadoraUrl}/v1/orcamentos`;
 const URL_ADMIN = `${environment.apiCalculadoraUrl}/v1/admin`;
@@ -12,10 +13,23 @@ export const apiService = {
   },
 
   async getConfig(): Promise<any> {
-    return httpClient.get(`${URL_ADMIN}/config`);
+    const cfg = await httpClient.get<any>(`${URL_ADMIN}/config`);
+    if (cfg?.telefoneDistribuidora) {
+      localStorage.setItem('tenant_distribuidora_whatsapp', cfg.telefoneDistribuidora);
+    }
+    if (cfg?.nomeDistribuidora) {
+      localStorage.setItem('tenant_distribuidora_nome', cfg.nomeDistribuidora);
+    }
+    return cfg;
   },
 
   async updatePrecos(config: any): Promise<any> {
+    if (config?.telefoneDistribuidora) {
+      localStorage.setItem('tenant_distribuidora_whatsapp', config.telefoneDistribuidora);
+    }
+    if (config?.nomeDistribuidora) {
+      localStorage.setItem('tenant_distribuidora_nome', config.nomeDistribuidora);
+    }
     return httpClient.put(`${URL_ADMIN}/config`, config);
   },
 
@@ -40,22 +54,25 @@ export const apiService = {
   },
 
   gerarMensagemCapitalEletrica(nomeCliente: string, itensMateriais: any[]): string {
+    const itensConsolidados = materialService.consolidarMateriaisSemDuplicar(itensMateriais || []);
     const nomeProfissional =
       localStorage.getItem('userName') ||
       localStorage.getItem('userNome') ||
       localStorage.getItem('nome_eletricista') ||
       'Eletricista Parceiro';
     const regiao = localStorage.getItem('regiao_eletricista') || 'Palmas/TO';
+    const nomeDistribuidora =
+      localStorage.getItem('tenant_distribuidora_nome') || environment.distribuidoraPadraoNome;
 
-    let msg = '⚡ *SOLICITAÇÃO DE COTAÇÃO — CAPITAL ELÉTRICA (PALMAS/TO)*\n';
-    msg += 'Profissional: *' + nomeProfissional + '*\n';
-    msg += 'Obra / Cliente: *' + nomeCliente + '* (' + regiao + ')\n';
-    msg += '-------------------------------------------\n';
-    msg += '*LISTA DE MATERIAIS DIMENSIONADOS (NBR 5410):*\n';
+    let msg = `⚡ *SOLICITAÇÃO DE COTAÇÃO — ${nomeDistribuidora.toUpperCase()}*\n`;
+    msg += `Profissional: *${nomeProfissional}*\n`;
+    msg += `Obra / Cliente: *${nomeCliente}* (${regiao})\n`;
+    msg += `-------------------------------------------\n`;
+    msg += `*LISTA CONSOLIDADA DE MATERIAIS (NBR 5410):*\n`;
 
-    if (itensMateriais && itensMateriais.length > 0) {
-      itensMateriais.forEach((item) => {
-        msg += '• ' + item.quantidade + ' ' + (item.unidade || 'un') + ' - ' + item.descricao + '\n';
+    if (itensConsolidados.length > 0) {
+      itensConsolidados.forEach((item) => {
+        msg += `• *${item.quantidade} ${item.unidade}* - ${item.descricao}\n`;
       });
     } else {
       msg += '• Cabos Flexíveis antichama 2.5mm² e 6.0mm²\n';
@@ -65,7 +82,7 @@ export const apiService = {
     }
 
     msg += '-------------------------------------------\n';
-    msg += 'Solicito cotação e condições de entrega/retirada em Palmas/TO.';
+    msg += 'Solicito cotação e condições de entrega/retirada.';
     return msg;
   }
 };

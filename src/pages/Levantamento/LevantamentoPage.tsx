@@ -21,6 +21,10 @@ export const LevantamentoPage: React.FC = () => {
 
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [levantamentoResultado, setLevantamentoResultado] = useState<any>(null);
+  const [materiaisEditaveis, setMateriaisEditaveis] = useState<any[]>([]);
+  const [novoMaterialDesc, setNovoMaterialDesc] = useState<string>('');
+  const [novoMaterialQtd, setNovoMaterialQtd] = useState<number>(1);
+  const [novoMaterialUnidade, setNovoMaterialUnidade] = useState<string>('UN');
 
   const navigate = useNavigate();
 
@@ -68,14 +72,16 @@ export const LevantamentoPage: React.FC = () => {
 
     try {
       const res = await materialService.gerarLevantamento(payload);
+      const consolidados = materialService.consolidarMateriaisSemDuplicar(res?.materiais || []);
       setLevantamentoResultado(res);
+      setMateriaisEditaveis(consolidados);
       setTimeout(() => {
         window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
       }, 100);
     } catch (err: any) {
       if (err?.status === 429) {
         alert(
-          '🚫 Limite atingido!\n\nVocê atingiu seu limite diário gratuito de 3 requisições. Assine o plano PRO!'
+          '🚫 Limite atingido!\n\nVocê atingiu seu limite diário gratuito de 15 orçamentos/dia. Assine o plano PRO!'
         );
         navigate('/assinatura');
       } else {
@@ -86,8 +92,37 @@ export const LevantamentoPage: React.FC = () => {
     }
   };
 
+  const alterarQuantidadeMaterial = (idx: number, novaQtd: number) => {
+    setMateriaisEditaveis((prev) =>
+      prev.map((m, i) => (i === idx ? { ...m, quantidade: Math.max(0, novaQtd) } : m))
+    );
+  };
+
+  const adicionarMaterialManual = () => {
+    if (!novoMaterialDesc.trim() || novoMaterialQtd <= 0) return;
+    const novaLista = materialService.consolidarMateriaisSemDuplicar([
+      ...materiaisEditaveis,
+      {
+        descricao: novoMaterialDesc.trim(),
+        quantidade: Math.max(1, novoMaterialQtd),
+        unidade: novoMaterialUnidade
+      }
+    ]);
+    setMateriaisEditaveis(novaLista);
+    setNovoMaterialDesc('');
+    setNovoMaterialQtd(1);
+  };
+
+  const cotarListaConsolidada = async () => {
+    await materialService.registrarLogCotacaoEAbrirWhatsApp({
+      orcamentoId: orcamentoIdAtual,
+      clienteNome: levantamentoResultado?.clienteNome || clienteNome,
+      itens: materiaisEditaveis
+    });
+  };
+
   if (levantamentoResultado) {
-    const materiais = levantamentoResultado.materiais || [];
+    const materiais = materiaisEditaveis;
     return (
       <div className="app-card" style={{ maxWidth: '900px', margin: '0 auto' }}>
         <div className="app-card-header">
@@ -105,6 +140,16 @@ export const LevantamentoPage: React.FC = () => {
             </p>
           </div>
           <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              className="app-btn app-btn-success"
+              onClick={cotarListaConsolidada}
+            >
+              <span className="material-icons" style={{ fontSize: '16px' }}>
+                storefront
+              </span>
+              <span>Cotar na Distribuidora (WhatsApp)</span>
+            </button>
             <button
               type="button"
               className="app-btn app-btn-secondary"
@@ -125,13 +170,68 @@ export const LevantamentoPage: React.FC = () => {
           </div>
         </div>
 
-        {/* DESKTOP (>= 768px): Tabela */}
+        {/* M2-03: Adicionar ou ajustar itens antes de enviar para cotação */}
+        <div
+          style={{
+            background: 'var(--bg-surface)',
+            border: '1px solid var(--border-subtle)',
+            borderRadius: 'var(--radius-md)',
+            padding: '0.85rem',
+            marginBottom: '1rem'
+          }}
+        >
+          <span className="app-label">
+            Adicionar item extra à lista (consolida automaticamente itens iguais sem duplicar)
+          </span>
+          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginTop: '0.35rem' }}>
+            <input
+              type="text"
+              className="app-input"
+              placeholder="Ex: Cabo Flexível 2.5mm²"
+              value={novoMaterialDesc}
+              onChange={(e) => setNovoMaterialDesc(e.target.value)}
+              style={{ flex: '2 1 180px' }}
+            />
+            <input
+              type="number"
+              inputMode="decimal"
+              min={1}
+              className="app-input"
+              value={novoMaterialQtd}
+              onChange={(e) => setNovoMaterialQtd(Math.max(1, Number(e.target.value)))}
+              style={{ flex: '0 1 90px' }}
+            />
+            <select
+              className="app-select"
+              value={novoMaterialUnidade}
+              onChange={(e) => setNovoMaterialUnidade(e.target.value)}
+              style={{ flex: '0 1 95px' }}
+            >
+              <option value="UN">UN</option>
+              <option value="M">M</option>
+              <option value="RL">RL</option>
+              <option value="CX">CX</option>
+            </select>
+            <button
+              type="button"
+              className="app-btn app-btn-secondary"
+              onClick={adicionarMaterialManual}
+            >
+              <span className="material-icons" style={{ fontSize: '16px' }}>
+                add
+              </span>
+              <span>Incluir</span>
+            </button>
+          </div>
+        </div>
+
+        {/* DESKTOP (>= 768px): Tabela com ajuste fino de quantidade (M2-03) */}
         <div className="app-table-container desktop-only-table">
           <table className="app-table">
             <thead>
               <tr>
                 <th>Material / Descrição</th>
-                <th style={{ textAlign: 'center' }}>Quantidade</th>
+                <th style={{ textAlign: 'center' }}>Ajustar Quantidade</th>
                 <th style={{ textAlign: 'center' }}>Unidade</th>
               </tr>
             </thead>
@@ -144,15 +244,38 @@ export const LevantamentoPage: React.FC = () => {
                   >
                     {item.descricao}
                   </td>
-                  <td
-                    style={{
-                      textAlign: 'center',
-                      fontWeight: 700,
-                      color: 'var(--accent-primary)',
-                      fontFamily: "'JetBrains Mono', monospace"
-                    }}
-                  >
-                    {item.quantidade}
+                  <td style={{ textAlign: 'center' }}>
+                    <div
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}
+                    >
+                      <button
+                        type="button"
+                        className="app-btn app-btn-secondary app-btn-sm"
+                        onClick={() => alterarQuantidadeMaterial(idx, item.quantidade - 1)}
+                      >
+                        −
+                      </button>
+                      <strong
+                        style={{
+                          minWidth: '36px',
+                          color: 'var(--accent-primary)',
+                          fontFamily: "'JetBrains Mono', monospace"
+                        }}
+                      >
+                        {item.quantidade}
+                      </strong>
+                      <button
+                        type="button"
+                        className="app-btn app-btn-secondary app-btn-sm"
+                        onClick={() => alterarQuantidadeMaterial(idx, item.quantidade + 1)}
+                      >
+                        +
+                      </button>
+                    </div>
                   </td>
                   <td style={{ textAlign: 'center' }}>
                     <span className="app-badge app-badge-success">{item.unidade}</span>
@@ -163,20 +286,36 @@ export const LevantamentoPage: React.FC = () => {
           </table>
         </div>
 
-        {/* MOBILE (< 768px): Cartões Verticais Empilhados (Prompt 01) */}
+        {/* MOBILE (< 768px): Cartões Verticais Empilhados com ajuste de quantidade (M2-03) */}
         <div className="mobile-only-cards">
           {materiais.map((item: any, idx: number) => (
             <div key={idx} className="mobile-stack-card">
               <strong className="break-words" style={{ color: 'var(--text-main)' }}>
                 {item.descricao}
               </strong>
-              <div className="mobile-stack-row">
+              <div className="mobile-stack-row" style={{ alignItems: 'center' }}>
                 <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-                  Quantidade dimensionada:
+                  Ajustar Qtd ({item.unidade}):
                 </span>
-                <span className="app-badge app-badge-success">
-                  {item.quantidade} {item.unidade}
-                </span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <button
+                    type="button"
+                    className="app-btn app-btn-secondary app-btn-sm"
+                    onClick={() => alterarQuantidadeMaterial(idx, item.quantidade - 1)}
+                  >
+                    −
+                  </button>
+                  <span className="app-badge app-badge-success" style={{ fontSize: '0.85rem' }}>
+                    {item.quantidade} {item.unidade}
+                  </span>
+                  <button
+                    type="button"
+                    className="app-btn app-btn-secondary app-btn-sm"
+                    onClick={() => alterarQuantidadeMaterial(idx, item.quantidade + 1)}
+                  >
+                    +
+                  </button>
+                </div>
               </div>
             </div>
           ))}

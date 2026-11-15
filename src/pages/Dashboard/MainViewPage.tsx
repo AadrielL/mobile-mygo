@@ -170,7 +170,7 @@ export const MainViewPage: React.FC = () => {
               <span className="metric-label">Limite Diário (Hoje)</span>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.4rem' }}>
                 <span className="metric-value">
-                  {stats?.budgetsToday || 0}/{stats?.dailyLimit || 3}
+                  {stats?.budgetsToday || 0}/{stats?.dailyLimit || 15}
                 </span>
                 <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                   {stats?.planType || 'FREE'}

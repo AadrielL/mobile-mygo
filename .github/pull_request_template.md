@@ -1,20 +1,15 @@
-## Resumo da Entrega (Frente 01)
-<!-- Descreva de forma objetiva o problema resolvido e o objetivo desta entrega -->
+## Resumo da Entrega
+- **Frente:** Frente 01 (Mobile-First & Economia de VPS) / Frente 02 (Orçamentos, Aceite e Materiais)
+- **Tarefa:** [ID e título da tarefa]
 
 ## O que foi alterado
-<!-- Liste os arquivos e componentes modificados -->
-- 
+- Descreva os componentes, rotas ou tabelas ajustadas.
 
-## Checklist Mobile (360px+) & VPS Básica
-- [ ] Testado em resoluções de **360px** e **390px** sem rolagem horizontal (`overflow-x`).
-- [ ] Tabelas convertidas em cards verticais empilhados abaixo de `768px` (mantendo tabela no desktop).
-- [ ] Textos longos (clientes, endereços, descrições) com quebra de linha segura sem estourar o card.
-- [ ] Botões, selects e inputs com altura mínima de **44px** e `inputMode` adequado (`decimal` / `numeric`).
-- [ ] Proteção contra cliques duplos (`isSubmitting`) ativa nos botões de envio/ação.
-- [ ] Debounce de `400ms` e skeletons leves em CSS puro aplicados (sem bibliotecas pesadas).
-- [ ] `npm run build` executado localmente com sucesso (0 erros).
+## Impacto na VPS e Banco Multi-Tenant
+- [x] Novas consultas otimizadas (sem loops N+1)
+- [x] Isolamento por tenant_id e profissional_id preservado
+- [x] Testado em resolução mobile (360px) e desktop
+- [x] Log de cotação registrado no banco antes do redirecionamento ao WhatsApp da distribuidora
 
-## Passo a passo para testar
-1. 
-2. 
-3. 
+## Como testar
+1. Passo a passo objetivo para validar o fluxo.
