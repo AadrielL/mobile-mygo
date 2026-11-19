@@ -36,7 +36,7 @@ import './Sidebar.css';
 export const Sidebar: React.FC = () => {
   const [userRole, setUserRole] = useState<string>('USER');
   const [planType, setPlanType] = useState<string>('FREE');
-  const [isMobile, setIsMobile] = useState<boolean>(window.innerWidth < 768);
+  const [isMobile] = useState<boolean>(true);
   const [showMobileMenu, setShowMobileMenu] = useState<boolean>(false);
 
   const location = useLocation();
@@ -46,18 +46,6 @@ export const Sidebar: React.FC = () => {
     setUserRole((authService.getUserRole() || 'USER').toUpperCase());
     setPlanType(authService.getPlanType());
   }, [location.pathname]);
-
-  useEffect(() => {
-    const handleResize = () => {
-      const mobile = window.innerWidth < 768;
-      setIsMobile(mobile);
-      if (!mobile) {
-        setShowMobileMenu(false);
-      }
-    };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
 
   const handleLogout = () => {
     authService.logout();
