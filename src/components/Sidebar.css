@@ -136,33 +136,34 @@
 }
 
 /* ==========================================================
-   MOBILE: BOTTOM NAVIGATION DOCK FIXA (< 768px)
+   MOBILE: BOTTOM NAVIGATION DOCK FIXA (SEMPRE ATIVA NO APP MOBILE)
    ========================================================== */
-.bottom-nav {
-  display: none;
+.sidebar {
+  display: none !important;
 }
 
-@media (max-width: 767px) {
-  .sidebar {
-    display: none !important;
-  }
+.bottom-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 480px;
+  min-height: 64px;
+  background: var(--bg-surface);
+  border-top: 1px solid var(--border-subtle);
+  border-left: 1px solid var(--border-subtle);
+  border-right: 1px solid var(--border-subtle);
+  z-index: 9999;
+  padding: 0 4px;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.45);
+}
 
-  .bottom-nav {
-    display: flex;
-    align-items: center;
-    justify-content: space-around;
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    min-height: 64px;
-    background: var(--bg-surface);
-    border-top: 1px solid var(--border-subtle);
-    z-index: 9999;
-    padding: 0 4px;
-    padding-bottom: env(safe-area-inset-bottom, 0px);
-    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.45);
-  }
+@media (max-width: 9999px) {
 
   .bottom-nav-item {
     position: relative;
