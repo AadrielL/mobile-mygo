@@ -2,7 +2,6 @@ import React from 'react';
 import { IonApp } from '@ionic/react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { ProtectedRoute } from './components/ProtectedRoute';
-import { OnboardingPage } from './pages/Onboarding/OnboardingPage';
 import { ParceirosPage } from './pages/Parceiros/ParceirosPage';
 import { LoginPage } from './pages/Login/LoginPage';
 import { RegisterPage } from './pages/Register/RegisterPage';
@@ -21,8 +20,8 @@ export const App: React.FC = () => {
     <IonApp>
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Navigate to="/onboarding" replace />} />
-          <Route path="/onboarding" element={<OnboardingPage />} />
+          <Route path="/" element={<Navigate to="/dashboard-main" replace />} />
+          <Route path="/onboarding" element={<Navigate to="/dashboard-main" replace />} />
           <Route path="/parceiros" element={<ParceirosPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
