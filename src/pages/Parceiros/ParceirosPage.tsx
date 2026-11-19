@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { httpClient } from '../../core/httpClient';
+import { authService } from '../../core/services/authService';
 import { environment } from '../../config/environment';
 import { useDebounce } from '../../core/hooks/useDebounce';
 import { SkeletonList } from '../../components/Skeleton';
@@ -138,57 +139,58 @@ export const ParceirosPage: React.FC = () => {
     navigate('/quiz');
   };
 
+  const handleVoltar = () => {
+    if (authService.isAuthenticated()) {
+      navigate('/dashboard-main');
+    } else {
+      navigate('/login');
+    }
+  };
+
   return (
     <div className="parceiros-container">
-      <header className="parceiros-header">
-        <div className="header-top">
-          <button
-            type="button"
-            className="app-btn app-btn-secondary"
-            onClick={() => navigate('/onboarding')}
-          >
-            <span className="material-icons">arrow_back</span>
-            <span>Voltar</span>
-          </button>
-          <div className="badge-app">⚡ MYGO • REDE DE PROFISSIONAIS PARCEIROS</div>
+      <header className="parceiros-appbar">
+        <button
+          type="button"
+          className="parceiros-back-btn"
+          onClick={handleVoltar}
+          aria-label="Voltar ao painel"
+        >
+          <span className="material-icons">arrow_back_ios_new</span>
+          <span>Voltar</span>
+        </button>
+        <div className="parceiros-appbar-title">
+          <span className="parceiros-appbar-main">Eletricistas por Perto</span>
+          <span className="parceiros-appbar-sub">Palmas/TO • NBR 5410</span>
         </div>
+        <div className="parceiros-appbar-badge">⚡ MYGO</div>
+      </header>
 
-        <h1 className="titulo-principal">Escolha o Eletricista Ideal para sua Obra</h1>
-        <p className="subtitulo">
-          Selecione um profissional certificado para dimensionar seu projeto pela{' '}
-          <strong>Norma ABNT NBR 5410</strong>. Rotacionamos novos parceiros qualificados de
-          Palmas/TO para garantir atendimento rápido e sem filas.
-        </p>
-
-        {/* Busca com debounce de 400ms */}
-        <div style={{ maxWidth: '460px', margin: '0 auto 1.25rem auto' }}>
+      <section className="parceiros-Controls">
+        <div className="parceiros-search-box">
+          <span className="material-icons parceiros-search-icon">search</span>
           <input
             type="search"
-            className="app-input"
-            placeholder="Buscar profissional ou especialidade..."
+            className="app-input parceiros-search-input"
+            placeholder="Buscar eletricista, bairro ou serviço..."
             value={buscaNome}
             onChange={(e) => setBuscaNome(e.target.value)}
           />
         </div>
 
-        <div className="filtro-container">
-          <span className="filtro-label">
-            <span className="material-icons">location_on</span> Região em Palmas:
-          </span>
-          <div className="filtro-botoes">
-            {REGIOES_DISPONIVEIS.map((regiao) => (
-              <button
-                key={regiao}
-                type="button"
-                className={`btn-filtro ${filtroRegiao === regiao ? 'ativo' : ''}`}
-                onClick={() => setFiltroRegiao(regiao)}
-              >
-                {regiao}
-              </button>
-            ))}
-          </div>
+        <div className="filtro-scroll-row" role="tablist" aria-label="Filtro por região">
+          {REGIOES_DISPONIVEIS.map((regiao) => (
+            <button
+              key={regiao}
+              type="button"
+              className={`btn-filtro ${filtroRegiao === regiao ? 'ativo' : ''}`}
+              onClick={() => setFiltroRegiao(regiao)}
+            >
+              {regiao === 'TODAS' ? '📍 Todas as Regiões' : regiao}
+            </button>
+          ))}
         </div>
-      </header>
+      </section>
 
       <main className="parceiros-grid">
         {carregando && (
