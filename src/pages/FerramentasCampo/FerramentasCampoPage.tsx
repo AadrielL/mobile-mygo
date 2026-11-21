@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { httpClient } from '../../core/httpClient';
 import { environment } from '../../config/environment';
 
-type AbaFerramenta = 'QUEDA_TENSAO' | 'ELETRODUTO' | 'MOTOR_AR' | 'QDC_PADRAO';
+type AbaFerramenta = 'QUEDA_TENSAO' | 'ELETRODUTO' | 'MOTOR_AR' | 'QDC_PADRAO' | 'CALIBRACAO_FIOS';
 
 const SECOES_COMERCIAIS = [1.5, 2.5, 4.0, 6.0, 10.0, 16.0, 25.0, 35.0, 50.0, 70.0];
 const AMPACIDADE_B1_2C = [17.5, 24.0, 32.0, 41.0, 57.0, 76.0, 101.0, 125.0, 151.0, 192.0];
@@ -141,6 +141,17 @@ export const FerramentasCampoPage: React.FC = () => {
   const [tensaoFn, setTensaoFn] = useState('220');
   const [qtdCircuitos, setQtdCircuitos] = useState('8');
   const [resQdc, setResQdc] = useState<any>(null);
+
+  // Estado 5: Calibração de Fios por Padrão de Casa + Feedback Pós-Obra (IA)
+  const [padraoCasa, setPadraoCasa] = useState('CASA_PADRAO_MEDIO_LAJE');
+  const [areaCasaM2, setAreaCasaM2] = useState('120');
+  const [statusFeedback, setStatusFeedback] = useState<'BATEU_EXATO' | 'FALTOU_FIO' | 'SOBROU_FIO'>('BATEU_EXATO');
+  const [deltaMetros, setDeltaMetros] = useState('25');
+  const [comentarioObra, setComentarioObra] = useState('');
+  const [fatorIaSalvo, setFatorIaSalvo] = useState<number>(() =>
+    Number(localStorage.getItem('mygo_fator_ia_fios') || '1.05')
+  );
+  const [msgFeedbackIa, setMsgFeedbackIa] = useState('');
 
   const executarQuedaTensao = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -409,6 +420,20 @@ export const FerramentasCampoPage: React.FC = () => {
             grid_view
           </span>
           <span>4. QDC, IDR &amp; DPS</span>
+        </button>
+
+        <button
+          type="button"
+          className={`app-btn app-btn-sm ${
+            abaAtiva === 'CALIBRACAO_FIOS' ? 'app-btn-primary' : 'app-btn-secondary'
+          }`}
+          style={{ gridColumn: '1 / -1' }}
+          onClick={() => setAbaAtiva('CALIBRACAO_FIOS')}
+        >
+          <span className="material-icons" style={{ fontSize: '16px' }}>
+            auto_graph
+          </span>
+          <span>5. Pré-Definição &amp; Feedback de Fios por Padrão de Casa (IA)</span>
         </button>
       </div>
 
@@ -932,6 +957,195 @@ export const FerramentasCampoPage: React.FC = () => {
           )}
         </div>
       )}
+
+      {/* ABA 5: CALIBRAÇÃO DE FIOS POR PADRÃO DE CASA & FEEDBACK PÓS-OBRA (IA) */}
+      {abaAtiva === 'CALIBRACAO_FIOS' && (() => {
+        const areaNum = Math.max(20, Number(areaCasaM2) || 120);
+        const coefs: Record<string, { nome: string; c15: number; c25: number; c40: number; c60: number }> = {
+          CASA_POPULAR_TERREA: { nome: 'Casa Térrea Popular / Forro PVC', c15: 1.35, c25: 2.1, c40: 0.65, c60: 0.45 },
+          CASA_PADRAO_MEDIO_LAJE: { nome: 'Casa Padrão Médio com Laje', c15: 1.6, c25: 2.55, c40: 0.95, c60: 0.55 },
+          SOBRADO_ALTO_PADRAO: { nome: 'Sobrado / Alto Padrão (2 QDCs)', c15: 1.95, c25: 3.1, c40: 1.35, c60: 0.75 },
+          APARTAMENTO_DRYWALL: { nome: 'Apartamento / Forro Gesso Drywall', c15: 1.25, c25: 1.95, c40: 0.85, c60: 0.4 }
+        };
+        const atual = coefs[padraoCasa] || coefs.CASA_PADRAO_MEDIO_LAJE;
+        const m15 = Math.ceil(areaNum * atual.c15 * fatorIaSalvo);
+        const m25 = Math.ceil(areaNum * atual.c25 * fatorIaSalvo);
+        const m40 = Math.ceil(areaNum * atual.c40 * fatorIaSalvo);
+        const m60 = Math.ceil(areaNum * atual.c60 * fatorIaSalvo);
+        const totalM = m15 + m25 + m40 + m60;
+
+        const enviarFeedbackIa = async (e: React.FormEvent) => {
+          e.preventDefault();
+          const d = Math.abs(Number(deltaMetros) || 0);
+          let novoF = fatorIaSalvo;
+          if (statusFeedback === 'FALTOU_FIO' && totalM > 0) {
+            const razao = Math.min(1.15, (totalM + d) / totalM);
+            novoF = Number(((0.85 * fatorIaSalvo) + (0.15 * fatorIaSalvo * razao)).toFixed(3));
+          } else if (statusFeedback === 'SOBROU_FIO' && totalM > 0) {
+            const razao = Math.max(0.85, (totalM - d) / totalM);
+            novoF = Number(((0.85 * fatorIaSalvo) + (0.15 * fatorIaSalvo * razao)).toFixed(3));
+          }
+          setFatorIaSalvo(novoF);
+          localStorage.setItem('mygo_fator_ia_fios', String(novoF));
+          try {
+            await httpClient.post(`${environment.apiMateriaisUrl}/api/materiais/eletrotecnica/calibracao-fios`, {
+              padraoCasa,
+              areaM2: areaNum,
+              statusFeedback,
+              deltaMetros: d,
+              fatorAtual: fatorIaSalvo,
+              comentario: comentarioObra
+            });
+          } catch {
+            // Salvo localmente e calibrado
+          }
+          setMsgFeedbackIa(
+            `✓ IA Calibrada! Novo coeficiente para ${atual.nome}: x${novoF} (baseado no seu feedback de obra).`
+          );
+          setComentarioObra('');
+        };
+
+        return (
+          <div className="app-card">
+            <div className="app-form-group">
+              <label className="app-label">Padrão Construtivo do Imóvel</label>
+              <select
+                className="app-select"
+                value={padraoCasa}
+                onChange={(e) => {
+                  setPadraoCasa(e.target.value);
+                  setMsgFeedbackIa('');
+                }}
+              >
+                <option value="CASA_POPULAR_TERREA">Casa Popular Térrea / MCMV (Forro PVC)</option>
+                <option value="CASA_PADRAO_MEDIO_LAJE">Casa Térrea Padrão Médio (Laje Embutida)</option>
+                <option value="SOBRADO_ALTO_PADRAO">Sobrado / Alto Padrão (Pé-Direito Duplo)</option>
+                <option value="APARTAMENTO_DRYWALL">Apartamento / Gesso Acartonado (Drywall)</option>
+              </select>
+            </div>
+
+            <div className="app-form-group">
+              <label className="app-label">Área Construída (m²)</label>
+              <input
+                type="number"
+                inputMode="decimal"
+                className="app-input"
+                value={areaCasaM2}
+                onChange={(e) => setAreaCasaM2(e.target.value)}
+              />
+            </div>
+
+            <div
+              style={{
+                padding: '0.95rem',
+                background: 'var(--bg-surface)',
+                border: '1px solid var(--accent-border)',
+                borderRadius: 'var(--radius-lg)',
+                marginBottom: '1rem'
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.6rem' }}>
+                <span className="app-badge app-badge-amber">PRÉ-DEFINIÇÃO CALIBRADA (x{fatorIaSalvo})</span>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Total: {totalM}m</span>
+              </div>
+              <div className="mobile-stack-row" style={{ marginBottom: '0.35rem' }}>
+                <span style={{ color: 'var(--text-secondary)' }}>Cabo 1,5 mm² (Iluminação):</span>
+                <strong>{m15} m ({(m15 / 100).toFixed(1)} rolos)</strong>
+              </div>
+              <div className="mobile-stack-row" style={{ marginBottom: '0.35rem' }}>
+                <span style={{ color: 'var(--text-secondary)' }}>Cabo 2,5 mm² (Tomadas TUG):</span>
+                <strong style={{ color: 'var(--accent-primary)' }}>{m25} m ({(m25 / 100).toFixed(1)} rolos)</strong>
+              </div>
+              <div className="mobile-stack-row" style={{ marginBottom: '0.35rem' }}>
+                <span style={{ color: 'var(--text-secondary)' }}>Cabo 4,0 mm² (Cozinha / Ar Split):</span>
+                <strong>{m40} m ({(m40 / 100).toFixed(1)} rolos)</strong>
+              </div>
+              <div className="mobile-stack-row">
+                <span style={{ color: 'var(--text-secondary)' }}>Cabo 6,0 mm² (Chuveiros 220V):</span>
+                <strong>{m60} m ({(m60 / 100).toFixed(1)} rolos)</strong>
+              </div>
+            </div>
+
+            <form onSubmit={enviarFeedbackIa}>
+              <span className="app-label" style={{ marginBottom: '0.45rem' }}>
+                Feedback Pós-Obra (Ensinar a IA Regional)
+              </span>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.4rem', marginBottom: '0.75rem' }}>
+                <button
+                  type="button"
+                  className={`app-btn app-btn-sm ${statusFeedback === 'BATEU_EXATO' ? 'app-btn-primary' : 'app-btn-secondary'}`}
+                  onClick={() => setStatusFeedback('BATEU_EXATO')}
+                >
+                  ✓ Bateu
+                </button>
+                <button
+                  type="button"
+                  className={`app-btn app-btn-sm ${statusFeedback === 'FALTOU_FIO' ? 'app-btn-primary' : 'app-btn-secondary'}`}
+                  onClick={() => setStatusFeedback('FALTOU_FIO')}
+                >
+                  + Faltou Fio
+                </button>
+                <button
+                  type="button"
+                  className={`app-btn app-btn-sm ${statusFeedback === 'SOBROU_FIO' ? 'app-btn-primary' : 'app-btn-secondary'}`}
+                  onClick={() => setStatusFeedback('SOBROU_FIO')}
+                >
+                  - Sobrou Fio
+                </button>
+              </div>
+
+              {statusFeedback !== 'BATEU_EXATO' && (
+                <div className="app-form-group">
+                  <label className="app-label">
+                    Quantos metros {statusFeedback === 'FALTOU_FIO' ? 'faltaram' : 'sobraram'} na obra?
+                  </label>
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    className="app-input"
+                    value={deltaMetros}
+                    onChange={(e) => setDeltaMetros(e.target.value)}
+                  />
+                </div>
+              )}
+
+              <div className="app-form-group">
+                <label className="app-label">Observação da Obra (Opcional)</label>
+                <input
+                  type="text"
+                  className="app-input"
+                  placeholder="Ex: Laje com pé-direito alto exigiu mais descidas de 2,5mm²"
+                  value={comentarioObra}
+                  onChange={(e) => setComentarioObra(e.target.value)}
+                />
+              </div>
+
+              <button type="submit" className="app-btn app-btn-primary" style={{ width: '100%' }}>
+                <span className="material-icons">psychology</span>
+                <span>Registrar Feedback e Calibrar IA</span>
+              </button>
+            </form>
+
+            {msgFeedbackIa && (
+              <p
+                style={{
+                  marginTop: '0.85rem',
+                  padding: '0.7rem',
+                  borderRadius: '8px',
+                  background: 'var(--status-success-bg)',
+                  border: '1px solid var(--status-success-border)',
+                  color: 'var(--status-success)',
+                  fontSize: '0.8rem',
+                  fontWeight: 700,
+                  textAlign: 'center'
+                }}
+              >
+                {msgFeedbackIa}
+              </p>
+            )}
+          </div>
+        );
+      })()}
     </div>
   );
 };
