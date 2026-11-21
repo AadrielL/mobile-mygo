@@ -142,7 +142,7 @@ export const RegisterPage: React.FC = () => {
 
     setIsSubmitting(true);
     try {
-      await authService.register({
+      const res = await authService.register({
         nome,
         cpf: cpfDigits,
         telefone: telDigits,
@@ -158,9 +158,24 @@ export const RegisterPage: React.FC = () => {
       localStorage.setItem('cliente_uf', estado);
       localStorage.setItem('cliente_cidade', cidade);
       localStorage.setItem('cliente_bairro', bairro);
+
+      if (res && res.token) {
+        navigate('/dashboard-main');
+        return;
+      }
+
+      // Autentica automaticamente a nova conta para não travar o profissional em tela de SMS
+      try {
+        await authService.login({ email, password });
+        navigate('/dashboard-main');
+        return;
+      } catch {
+        // Se exigir código manual, exibe etapa de verificação
+      }
+
       setEtapaVerificacao(true);
       setSucessoMensagem(
-        'Ficha cadastral registrada! Enviamos um código de 6 dígitos por SMS para seu número e para seu e-mail.'
+        'Ficha cadastral registrada! Enviamos um código de 6 dígitos para ativar sua conta.'
       );
     } catch (err: any) {
       if (err?.error && typeof err.error === 'string') {
