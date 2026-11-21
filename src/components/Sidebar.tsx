@@ -247,6 +247,19 @@ export const Sidebar: React.FC = () => {
             <IonItem
               button
               detail
+              onClick={() => navigateFromModal('/ferramentas-campo')}
+              className="mygo-ionic-item"
+            >
+              <IonIcon icon={flashOutline} slot="start" className="mygo-ionic-item-icon" />
+              <IonLabel>
+                <h3>Kit Eletrotécnico de Campo</h3>
+                <p>Queda de tensão (ΔV), eletrodutos, BTU/CV e QDC</p>
+              </IonLabel>
+            </IonItem>
+
+            <IonItem
+              button
+              detail
               onClick={() => navigateFromModal('/levantamento')}
               className="mygo-ionic-item"
             >
