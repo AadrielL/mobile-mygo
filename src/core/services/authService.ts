@@ -30,7 +30,11 @@ export const authService = {
   },
 
   async register(userData: any): Promise<any> {
-    return httpClient.post(`${API_URL}/auth/register`, userData);
+    const res = await httpClient.post<any>(`${API_URL}/auth/register`, userData);
+    if (res && res.token) {
+      saveSession(res);
+    }
+    return res;
   },
 
   async login(credentials: { email: string; password: string }): Promise<any> {
