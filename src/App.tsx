@@ -14,6 +14,7 @@ import { LevantamentoPage } from './pages/Levantamento/LevantamentoPage';
 import { ConfigPrecosPage } from './pages/ConfigPrecos/ConfigPrecosPage';
 import { ReportsPage } from './pages/Reports/ReportsPage';
 import { PropostaClientePage } from './pages/Proposta/PropostaClientePage';
+import { FerramentasCampoPage } from './pages/FerramentasCampo/FerramentasCampoPage';
 
 export const App: React.FC = () => {
   return (
@@ -48,6 +49,7 @@ export const App: React.FC = () => {
             <Route path="quiz" element={<QuizPage />} />
             <Route path="historico" element={<HistoricoPage />} />
             <Route path="levantamento" element={<LevantamentoPage />} />
+            <Route path="ferramentas-campo" element={<FerramentasCampoPage />} />
             <Route
               path="reports"
               element={
