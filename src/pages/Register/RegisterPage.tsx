@@ -531,15 +531,17 @@ export const RegisterPage: React.FC = () => {
                     marginTop: '1px'
                   }}
                 >
-                  phonelink_lock
+                  auto_graph
                 </span>
                 <div>
                   <span className="app-badge app-badge-amber" style={{ marginBottom: '0.35rem' }}>
-                    VERIFICAÇÃO DUPLA (SMS + E-MAIL)
+                    INTELIGÊNCIA REGIONAL &amp; CALIBRAÇÃO DE FIOS (IA)
                   </span>
-                  <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', margin: 0 }}>
-                    Enviaremos um código de 6 dígitos para o seu celular e e-mail para autenticar
-                    seu número e ativar o radar de geolocalização da sua região.
+                  <p style={{ fontSize: '0.77rem', color: 'var(--text-secondary)', margin: 0 }}>
+                    Ao criar sua conta, o MyGo utiliza sua <strong>região ({cidade}/{estado})</strong>{' '}
+                    e seus feedbacks pós-obra (se a metragem de cabos bateu, faltou ou sobrou em
+                    cada padrão de casa/laje) para calibrar os agentes de IA e pré-definir listas
+                    de materiais cada vez mais precisas para o seu perfil construtivo.
                   </p>
                 </div>
               </div>
