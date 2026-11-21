@@ -8,13 +8,13 @@ export const environment = {
   production: !isLocalhost,
   apiAuthUrl:
     envMeta.VITE_API_AUTH_URL ||
-    (isLocalhost ? 'http://localhost:8083' : 'https://api.comandosamoris.tech'),
+    (isLocalhost ? 'http://localhost:8083' : 'https://www.comandosamoris.tech/svc/auth'),
   apiCalculadoraUrl:
     envMeta.VITE_API_CALCULADORA_URL ||
-    (isLocalhost ? 'http://localhost:8081' : 'https://calculadora.comandosamoris.tech'),
+    (isLocalhost ? 'http://localhost:8081' : 'https://www.comandosamoris.tech/svc/calc'),
   apiMateriaisUrl:
     envMeta.VITE_API_MATERIAIS_URL ||
-    (isLocalhost ? 'http://localhost:8082' : 'https://materiais.comandosamoris.tech'),
+    (isLocalhost ? 'http://localhost:8082' : 'https://www.comandosamoris.tech/svc/materiais'),
   mercadoPagoPublicKey:
     envMeta.VITE_MP_PUBLIC_KEY || 'APP_USR-08772766-1d3a-4e72-8d52-30f223b799f7',
   // M2-04: Configuração padrão do Tenant para cotação na distribuidora (sem hardcode nos componentes visuais)
