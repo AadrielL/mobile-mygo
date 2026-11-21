@@ -108,6 +108,21 @@ export const DashboardLayout: React.FC = () => {
               <span className="hide-mobile">{isDarkMode ? 'Claro' : 'Escuro'}</span>
             </button>
 
+            <button
+              type="button"
+              className="app-btn app-btn-secondary app-btn-sm"
+              onClick={() => navigate('/config-precos')}
+              title="Ajustes e Tabela de Preços"
+              aria-label="Abrir Ajustes e Tabela de Preços"
+            >
+              <span
+                className="material-icons"
+                style={{ fontSize: '17px', color: 'var(--accent-primary)' }}
+              >
+                settings
+              </span>
+            </button>
+
             <div className="topbar-divider hide-mobile" />
 
             <div className="user-chip" title="Usuário conectado">
