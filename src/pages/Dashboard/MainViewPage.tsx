@@ -320,6 +320,67 @@ export const MainViewPage: React.FC = () => {
 
           <div
             className="app-card app-card-interactive"
+            onClick={() => navigate('/ferramentas-campo')}
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+              borderColor: 'var(--accent-border)'
+            }}
+          >
+            <div>
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'flex-start',
+                  gap: '0.5rem',
+                  marginBottom: '0.5rem'
+                }}
+              >
+                <span style={{ fontWeight: 700, color: 'var(--text-main)', fontSize: '0.95rem' }}>
+                  Kit Eletrotécnico de Campo
+                </span>
+                <span className="app-badge app-badge-amber">Novo • NBR 5410</span>
+              </div>
+              <p
+                style={{
+                  color: 'var(--text-secondary)',
+                  fontSize: '0.8rem',
+                  lineHeight: 1.4
+                }}
+              >
+                Calculadoras rápidas de Queda de Tensão (ΔV%), Ocupação de Eletrodutos (40%),
+                Motores/BTU e QDC (IDR + DPS).
+              </p>
+            </div>
+            <div
+              style={{
+                marginTop: '1rem',
+                paddingTop: '0.75rem',
+                borderTop: '1px solid var(--border-subtle)',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center'
+              }}
+            >
+              <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                Cálculos rápidos de bolso
+              </span>
+              <span
+                style={{
+                  fontSize: '0.75rem',
+                  fontWeight: 700,
+                  color: 'var(--accent-primary)'
+                }}
+              >
+                Abrir Kit →
+              </span>
+            </div>
+          </div>
+
+          <div
+            className="app-card app-card-interactive"
             onClick={() => navigate('/levantamento')}
             style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}
           >
