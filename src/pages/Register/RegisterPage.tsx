@@ -240,13 +240,24 @@ export const RegisterPage: React.FC = () => {
       style={{
         display: 'flex',
         minHeight: '100vh',
-        background: 'var(--bg-main)',
-        alignItems: 'center',
+        background: '#050608',
+        alignItems: 'flex-start',
         justifyContent: 'center',
-        padding: '1.25rem 0.75rem'
+        padding: '0'
       }}
     >
-      <div style={{ width: '100%', maxWidth: '520px' }}>
+      <div
+        style={{
+          width: '100%',
+          maxWidth: '480px',
+          minHeight: '100vh',
+          background: 'var(--bg-main)',
+          padding: '1.25rem 0.85rem 2.5rem 0.85rem',
+          borderLeft: '1px solid var(--border-subtle)',
+          borderRight: '1px solid var(--border-subtle)',
+          boxShadow: '0 0 40px rgba(0, 0, 0, 0.65)'
+        }}
+      >
         <div style={{ textAlign: 'center', marginBottom: '1.25rem' }}>
           <div
             style={{
