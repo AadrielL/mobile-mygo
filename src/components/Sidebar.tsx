@@ -28,7 +28,8 @@ import {
   logOutOutline,
   closeOutline,
   flashOutline,
-  desktopOutline
+  desktopOutline,
+  settingsOutline
 } from 'ionicons/icons';
 import { authService } from '../core/services/authService';
 import './Sidebar.css';
@@ -207,13 +208,22 @@ export const Sidebar: React.FC = () => {
           <IonRippleEffect />
         </NavLink>
 
+        <NavLink
+          to="/config-precos"
+          className={({ isActive }) => `bottom-nav-item ion-activatable ${isActive ? 'active' : ''}`}
+        >
+          <IonIcon icon={settingsOutline} className="ionic-tab-icon" />
+          <span className="bottom-nav-label">Preços &amp; Config</span>
+          <IonRippleEffect />
+        </NavLink>
+
         <button
           type="button"
           className={`bottom-nav-item bottom-nav-more ion-activatable ${showMobileMenu ? 'active' : ''}`}
           onClick={() => setShowMobileMenu(true)}
         >
           <IonIcon icon={constructOutline} className="ionic-tab-icon" />
-          <span className="bottom-nav-label">Ferramentas</span>
+          <span className="bottom-nav-label">Mais</span>
           <IonRippleEffect />
         </button>
       </nav>
