@@ -15,6 +15,9 @@ export const environment = {
   apiMateriaisUrl:
     envMeta.VITE_API_MATERIAIS_URL ||
     (isLocalhost ? 'http://localhost:8082' : 'https://www.comandosamoris.tech/svc/materiais'),
+  apiAgentesUrl:
+    envMeta.VITE_API_AGENTES_URL ||
+    (isLocalhost ? 'http://localhost:8084' : 'https://www.comandosamoris.tech/svc/agentes'),
   mercadoPagoPublicKey:
     envMeta.VITE_MP_PUBLIC_KEY || 'APP_USR-08772766-1d3a-4e72-8d52-30f223b799f7',
   // M2-04: Configuração padrão do Tenant para cotação na distribuidora (sem hardcode nos componentes visuais)
