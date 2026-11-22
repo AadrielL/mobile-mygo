@@ -147,24 +147,33 @@ export const AssinaturaPage: React.FC = () => {
   };
 
   return (
-    <div className="app-container" style={{ maxWidth: '1040px', paddingBottom: '5rem' }}>
-      <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-        <h1 className="app-title" style={{ fontSize: '1.6rem' }}>
-          Assinatura <span style={{ color: 'var(--accent-primary)' }}>PRO</span>
+    <div
+      className="app-container"
+      style={{
+        maxWidth: '480px',
+        minHeight: '100vh',
+        paddingBottom: '5rem',
+        borderLeft: '1px solid var(--border-subtle)',
+        borderRight: '1px solid var(--border-subtle)'
+      }}
+    >
+      <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+        <h1 className="app-title" style={{ fontSize: '1.4rem' }}>
+          Planos <span style={{ color: 'var(--accent-primary)' }}>MyGo Elétrica</span>
         </h1>
-        <p className="app-subtitle" style={{ marginTop: '0.4rem' }}>
-          Desbloqueie orçamentos ilimitados e acesso completo à plataforma.
+        <p className="app-subtitle" style={{ marginTop: '0.35rem' }}>
+          Desbloqueie os 5 Agentes de IA, Kit Eletrotécnico NBR 5410 e Orçamentos Ilimitados.
         </p>
         <button
           type="button"
           className="app-btn app-btn-ghost"
-          onClick={() => navigate('/quiz')}
-          style={{ marginTop: '0.85rem' }}
+          onClick={() => navigate('/dashboard-main')}
+          style={{ marginTop: '0.65rem' }}
         >
           <span className="material-icons" style={{ fontSize: '16px' }}>
             arrow_back
           </span>
-          <span>Continuar no Plano Grátis (3 orçamentos/dia)</span>
+          <span>Voltar ao Painel Mobile</span>
         </button>
       </div>
 
@@ -188,72 +197,8 @@ export const AssinaturaPage: React.FC = () => {
         </div>
       )}
 
-      <div className="app-grid-3">
-        {/* Plano Semanal */}
-        <div className="app-card" style={{ textAlign: 'center', display: 'flex', flexDirection: 'column' }}>
-          <div style={{ marginBottom: '0.5rem' }}>
-            <span className="app-badge app-badge-muted">SEMANAL</span>
-          </div>
-          <h3 style={{ fontSize: '1.3rem', fontWeight: 800, color: 'var(--status-info)' }}>
-            Plano Semanal
-          </h3>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '1rem' }}>
-            Até 50 Orçamentos / dia
-          </p>
-          <div
-            style={{
-              fontSize: '2rem',
-              fontWeight: 900,
-              color: 'var(--text-main)',
-              fontFamily: "'JetBrains Mono', monospace"
-            }}
-          >
-            R$ 1,99
-          </div>
-          <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '1.25rem' }}>
-            por semana
-          </div>
-          <ul
-            style={{
-              listStyle: 'none',
-              padding: 0,
-              textAlign: 'left',
-              marginBottom: '1.5rem',
-              flex: 1
-            }}
-          >
-            <li style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-              <span className="material-icons" style={{ fontSize: '16px', color: 'var(--status-success)' }}>
-                check_circle
-              </span>
-              <span>Dashboard Liberado</span>
-            </li>
-            <li style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-              <span className="material-icons" style={{ fontSize: '16px', color: 'var(--status-success)' }}>
-                check_circle
-              </span>
-              <span>Relatórios Gerenciais</span>
-            </li>
-            <li style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <span className="material-icons" style={{ fontSize: '16px', color: 'var(--status-success)' }}>
-                check_circle
-              </span>
-              <span>Envio via WhatsApp</span>
-            </li>
-          </ul>
-          <SubmitButton
-            type="button"
-            variant="secondary"
-            isSubmitting={isSubmitting}
-            loadingText="Carregando..."
-            onClick={() => iniciarPagamento(1.99)}
-            style={{ width: '100%', marginTop: 'auto' }}
-          >
-            <span>Assinar Semanal</span>
-          </SubmitButton>
-        </div>
-
-        {/* Plano Mensal */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.1rem' }}>
+        {/* Plano PRO Eletricista de Campo */}
         <div
           className="app-card"
           style={{
@@ -280,28 +225,28 @@ export const AssinaturaPage: React.FC = () => {
               whiteSpace: 'nowrap'
             }}
           >
-            MAIS POPULAR
+            MAIS ESCOLHIDO POR ELETRICISTAS
           </div>
-          <div style={{ marginBottom: '0.5rem', marginTop: '0.25rem' }}>
-            <span className="app-badge app-badge-amber">MENSAL</span>
+          <div style={{ marginBottom: '0.35rem', marginTop: '0.25rem' }}>
+            <span className="app-badge app-badge-amber">PRO ELETRICISTA</span>
           </div>
-          <h3 style={{ fontSize: '1.3rem', fontWeight: 800, color: 'var(--accent-primary)' }}>
-            Plano Mensal
+          <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--accent-primary)' }}>
+            PRO Eletricista de Campo
           </h3>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '1rem' }}>
-            Até 100 Orçamentos / dia
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem', marginBottom: '0.75rem' }}>
+            Orçamentos Ilimitados + Kit NBR 5410 + 25 Consultas IA/dia
           </p>
           <div
             style={{
-              fontSize: '2rem',
+              fontSize: '1.9rem',
               fontWeight: 900,
               color: 'var(--text-main)',
               fontFamily: "'JetBrains Mono', monospace"
             }}
           >
-            R$ 9,99
+            R$ 39,90
           </div>
-          <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '1.25rem' }}>
+          <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
             por mês
           </div>
           <ul
@@ -309,27 +254,27 @@ export const AssinaturaPage: React.FC = () => {
               listStyle: 'none',
               padding: 0,
               textAlign: 'left',
-              marginBottom: '1.5rem',
-              flex: 1
+              marginBottom: '1.15rem',
+              fontSize: '0.84rem'
             }}
           >
-            <li style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+            <li style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.4rem' }}>
               <span className="material-icons" style={{ fontSize: '16px', color: 'var(--status-success)' }}>
                 check_circle
               </span>
-              <span>Dashboard Liberado</span>
+              <span>Kit Eletrotécnico NBR 5410 Completo (ΔV, Conduíte, BTU e QDC)</span>
             </li>
-            <li style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+            <li style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.4rem' }}>
               <span className="material-icons" style={{ fontSize: '16px', color: 'var(--status-success)' }}>
                 check_circle
               </span>
-              <span>Relatórios Gerenciais</span>
+              <span>Pré-Definição de Fios Calibrada por Padrão de Casa (IA)</span>
             </li>
             <li style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <span className="material-icons" style={{ fontSize: '16px', color: 'var(--status-success)' }}>
                 check_circle
               </span>
-              <span>Envio via WhatsApp</span>
+              <span>Link Exclusivo (?ref=) Blindado Anti-Concorrência</span>
             </li>
           </ul>
           <SubmitButton
@@ -337,14 +282,78 @@ export const AssinaturaPage: React.FC = () => {
             variant="primary"
             isSubmitting={isSubmitting}
             loadingText="Carregando..."
-            onClick={() => iniciarPagamento(9.99)}
-            style={{ width: '100%', marginTop: 'auto' }}
+            onClick={() => iniciarPagamento(39.9)}
+            style={{ width: '100%' }}
           >
-            <span>Assinar Mensal</span>
+            <span>Assinar PRO Eletricista (R$ 39,90/mês)</span>
           </SubmitButton>
         </div>
 
-        {/* Plano Vitalício */}
+        {/* Plano Técnico Eletrotécnico AI Master */}
+        <div className="app-card" style={{ textAlign: 'center', display: 'flex', flexDirection: 'column' }}>
+          <div style={{ marginBottom: '0.35rem' }}>
+            <span className="app-badge app-badge-info">ELETROTÉCNICO MASTER AI</span>
+          </div>
+          <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--status-info)' }}>
+            Técnico Eletrotécnico AI
+          </h3>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem', marginBottom: '0.75rem' }}>
+            Prioridade Máxima na Fila + 60 Consultas Multi-Agentes/dia
+          </p>
+          <div
+            style={{
+              fontSize: '1.9rem',
+              fontWeight: 900,
+              color: 'var(--text-main)',
+              fontFamily: "'JetBrains Mono', monospace"
+            }}
+          >
+            R$ 69,90
+          </div>
+          <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
+            por mês
+          </div>
+          <ul
+            style={{
+              listStyle: 'none',
+              padding: 0,
+              textAlign: 'left',
+              marginBottom: '1.15rem',
+              fontSize: '0.84rem'
+            }}
+          >
+            <li style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.4rem' }}>
+              <span className="material-icons" style={{ fontSize: '16px', color: 'var(--status-success)' }}>
+                check_circle
+              </span>
+              <span>Todos os 5 Agentes Liberados (NR-10, Regional UF e Auditor)</span>
+            </li>
+            <li style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.4rem' }}>
+              <span className="material-icons" style={{ fontSize: '16px', color: 'var(--status-success)' }}>
+                check_circle
+              </span>
+              <span>Prioridade VIP na Fila de Inferência (Sem Espera)</span>
+            </li>
+            <li style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <span className="material-icons" style={{ fontSize: '16px', color: 'var(--status-success)' }}>
+                check_circle
+              </span>
+              <span>Relatórios Executivos e Dimensionamento Trifásico/Industrial</span>
+            </li>
+          </ul>
+          <SubmitButton
+            type="button"
+            variant="secondary"
+            isSubmitting={isSubmitting}
+            loadingText="Carregando..."
+            onClick={() => iniciarPagamento(69.9)}
+            style={{ width: '100%' }}
+          >
+            <span>Assinar Eletrotécnico AI (R$ 69,90/mês)</span>
+          </SubmitButton>
+        </div>
+
+        {/* Plano Vitalício Fundador */}
         <div
           className="app-card"
           style={{
@@ -354,84 +363,38 @@ export const AssinaturaPage: React.FC = () => {
             position: 'relative'
           }}
         >
-          <div
-            style={{
-              position: 'absolute',
-              top: '-12px',
-              left: '50%',
-              transform: 'translateX(-50%)',
-              background: 'var(--bg-surface)',
-              border: '1px solid var(--border-subtle)',
-              color: 'var(--text-muted)',
-              padding: '2px 14px',
-              borderRadius: '9999px',
-              fontSize: '0.68rem',
-              fontWeight: 800,
-              whiteSpace: 'nowrap'
-            }}
-          >
-            {vagasVitalicias} / 1000 vagas
+          <div style={{ marginBottom: '0.35rem' }}>
+            <span className="app-badge app-badge-muted">
+              VITALÍCIO FUNDADOR ({vagasVitalicias} vagas)
+            </span>
           </div>
-          <div style={{ marginBottom: '0.5rem', marginTop: '0.25rem' }}>
-            <span className="app-badge app-badge-muted">VITALÍCIO</span>
-          </div>
-          <h3 style={{ fontSize: '1.3rem', fontWeight: 800, color: 'var(--text-main)' }}>
-            Plano Vitalício
+          <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-main)' }}>
+            Passaporte Vitalício MyGo
           </h3>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '1rem' }}>
-            Acesso Ilimitado para Sempre
-          </p>
           <div
             style={{
-              fontSize: '2rem',
+              fontSize: '1.85rem',
               fontWeight: 900,
               color: 'var(--text-main)',
-              fontFamily: "'JetBrains Mono', monospace"
+              fontFamily: "'JetBrains Mono', monospace",
+              marginTop: '0.35rem'
             }}
           >
-            R$ 199
+            R$ 297,00
           </div>
-          <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '1.25rem' }}>
-            pagamento único
+          <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
+            pagamento único (sem mensalidade)
           </div>
-          <ul
-            style={{
-              listStyle: 'none',
-              padding: 0,
-              textAlign: 'left',
-              marginBottom: '1.5rem',
-              flex: 1
-            }}
-          >
-            <li style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-              <span className="material-icons" style={{ fontSize: '16px', color: 'var(--status-success)' }}>
-                check_circle
-              </span>
-              <span>100 Orçamentos / dia</span>
-            </li>
-            <li style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-              <span className="material-icons" style={{ fontSize: '16px', color: 'var(--status-success)' }}>
-                check_circle
-              </span>
-              <span>Sem cobranças mensais</span>
-            </li>
-            <li style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <span className="material-icons" style={{ fontSize: '16px', color: 'var(--status-success)' }}>
-                check_circle
-              </span>
-              <span>Todas as ferramentas</span>
-            </li>
-          </ul>
           <SubmitButton
             type="button"
             variant={vagasVitalicias > 0 ? 'secondary' : 'ghost'}
             isSubmitting={isSubmitting}
             loadingText="Carregando..."
             disabled={vagasVitalicias <= 0}
-            onClick={() => iniciarPagamento(199.0)}
-            style={{ width: '100%', marginTop: 'auto' }}
+            onClick={() => iniciarPagamento(297.0)}
+            style={{ width: '100%' }}
           >
-            <span>{vagasVitalicias > 0 ? 'Garantir Vaga' : 'Esgotado'}</span>
+            <span>{vagasVitalicias > 0 ? 'Garantir Vaga Vitalícia' : 'Esgotado'}</span>
           </SubmitButton>
         </div>
       </div>
