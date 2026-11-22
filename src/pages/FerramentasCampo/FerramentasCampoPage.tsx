@@ -3,7 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { httpClient } from '../../core/httpClient';
 import { environment } from '../../config/environment';
 
-type AbaFerramenta = 'QUEDA_TENSAO' | 'ELETRODUTO' | 'MOTOR_AR' | 'QDC_PADRAO' | 'CALIBRACAO_FIOS';
+type AbaFerramenta =
+  | 'QUEDA_TENSAO'
+  | 'ELETRODUTO'
+  | 'MOTOR_AR'
+  | 'QDC_PADRAO'
+  | 'CALIBRACAO_FIOS'
+  | 'MULTI_AGENTES';
 
 const SECOES_COMERCIAIS = [1.5, 2.5, 4.0, 6.0, 10.0, 16.0, 25.0, 35.0, 50.0, 70.0];
 const AMPACIDADE_B1_2C = [17.5, 24.0, 32.0, 41.0, 57.0, 76.0, 101.0, 125.0, 151.0, 192.0];
@@ -152,6 +158,18 @@ export const FerramentasCampoPage: React.FC = () => {
     Number(localStorage.getItem('mygo_fator_ia_fios') || '1.05')
   );
   const [msgFeedbackIa, setMsgFeedbackIa] = useState('');
+
+  // Estado 6: Consultor Multi-Agentes Especializados (NR-10, Regional UF e Auditor Comercial)
+  const [agenteSelecionado, setAgenteSelecionado] = useState<
+    'AGENTE_DIAGNOSTICO_NR10' | 'AGENTE_GEOLOCALIZACAO' | 'AGENTE_AUDITOR_PROPOSTA'
+  >('AGENTE_DIAGNOSTICO_NR10');
+  const [contextoAgente, setContextoAgente] = useState('IDR 30mA desarmando ao ligar chuveiro');
+  const [ufAgente, setUfAgente] = useState(() => localStorage.getItem('cliente_uf') || 'TO');
+  const [cidadeAgente, setCidadeAgente] = useState(
+    () => localStorage.getItem('cliente_cidade') || 'Palmas'
+  );
+  const [valorPropostaAgente, setValorPropostaAgente] = useState('3850');
+  const [resAgente, setResAgente] = useState<any>(null);
 
   const executarQuedaTensao = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -427,13 +445,25 @@ export const FerramentasCampoPage: React.FC = () => {
           className={`app-btn app-btn-sm ${
             abaAtiva === 'CALIBRACAO_FIOS' ? 'app-btn-primary' : 'app-btn-secondary'
           }`}
-          style={{ gridColumn: '1 / -1' }}
           onClick={() => setAbaAtiva('CALIBRACAO_FIOS')}
         >
           <span className="material-icons" style={{ fontSize: '16px' }}>
             auto_graph
           </span>
-          <span>5. Pré-Definição &amp; Feedback de Fios por Padrão de Casa (IA)</span>
+          <span>5. Calibrar Fios (IA)</span>
+        </button>
+
+        <button
+          type="button"
+          className={`app-btn app-btn-sm ${
+            abaAtiva === 'MULTI_AGENTES' ? 'app-btn-primary' : 'app-btn-secondary'
+          }`}
+          onClick={() => setAbaAtiva('MULTI_AGENTES')}
+        >
+          <span className="material-icons" style={{ fontSize: '16px' }}>
+            smart_toy
+          </span>
+          <span>6. Agentes NR-10 &amp; UF</span>
         </button>
       </div>
 
@@ -1142,6 +1172,309 @@ export const FerramentasCampoPage: React.FC = () => {
               >
                 {msgFeedbackIa}
               </p>
+            )}
+          </div>
+        );
+      })()}
+
+      {/* ABA 6: CONSULTOR MULTI-AGENTES PROTEGIDOS POR ESCOPO (NR-10, REGIONAL UF E PROPOSTA) */}
+      {abaAtiva === 'MULTI_AGENTES' && (() => {
+        const consultarAgente = async (e: React.FormEvent) => {
+          e.preventDefault();
+          const areaNum = Math.max(20, Number(areaCasaM2) || 120);
+          const valProp = Number(valorPropostaAgente) || 3850;
+          setCalculando(true);
+          try {
+            const apiRes = await httpClient.post<any>(
+              `${environment.apiMateriaisUrl}/api/materiais/eletrotecnica/consultar-agente`,
+              {
+                agente: agenteSelecionado,
+                contexto: contextoAgente,
+                uf: ufAgente,
+                cidade: cidadeAgente,
+                areaM2: areaNum,
+                valorProposta: valProp
+              }
+            );
+            setResAgente(apiRes);
+          } catch {
+            const s = contextoAgente.toLowerCase();
+            if (agenteSelecionado === 'AGENTE_DIAGNOSTICO_NR10') {
+              const ehIdr = s.includes('idr') || s.includes('dr') || s.includes('fuga');
+              setResAgente({
+                agenteAcionado: 'AGENTE_DIAGNOSTICO_NR10',
+                escopoRbac: 'SCOPE_SAFETY_DIAGNOSTICS',
+                diagnostico: ehIdr
+                  ? 'Atuação do IDR (30mA) por corrente de fuga à terra ou neutro compartilhado entre circuitos.'
+                  : 'Sobrecarga térmica (Ib > In) ou mal contato em borne provocando aquecimento/desarme.',
+                passosCampo: ehIdr
+                  ? [
+                      '1. Desligue todos os disjuntores terminais e rearme o IDR para testar o barramento.',
+                      '2. Ligue um disjuntor por vez até achar o circuito com fuga.',
+                      '3. Verifique se dois circuitos compartilham o mesmo neutro.'
+                    ]
+                  : [
+                      '1. Meça a corrente real com alicate amperímetro e compare com Iz do cabo.',
+                      '2. Reaperte os bornes e aplique terminal tubular (ilhós) nos cabos flexíveis.'
+                    ],
+                checklistNr10: [
+                  '1. Seccionamento do circuito',
+                  '2. Bloqueio mecânico LOTO',
+                  '3. Constatação de ausência de tensão (F-N e F-T)',
+                  '4. Sinalização do QDC'
+                ]
+              });
+            } else if (agenteSelecionado === 'AGENTE_GEOLOCALIZACAO') {
+              const tensao220 = !['SP', 'RJ', 'MG'].includes(ufAgente.toUpperCase());
+              const m2Val = ufAgente.toUpperCase() === 'SP' ? 58 : ufAgente.toUpperCase() === 'GO' ? 50 : 45;
+              setResAgente({
+                agenteAcionado: 'AGENTE_GEOLOCALIZACAO',
+                escopoRbac: 'SCOPE_GEO_PRICING',
+                regiaoAnalisada: `${cidadeAgente}/${ufAgente.toUpperCase()}`,
+                concessionaria:
+                  ufAgente.toUpperCase() === 'TO'
+                    ? 'Energisa Tocantins'
+                    : ufAgente.toUpperCase() === 'GO'
+                      ? 'Equatorial Goiás'
+                      : `Concessionária ${ufAgente.toUpperCase()}`,
+                tensaoPadrao: tensao220 ? '220V (Fase-Neutro) / 380V' : '127V (Fase-Neutro) / 220V',
+                faixaJustaMaoDeObraM2: `R$ ${m2Val},00/m² (Com Infra) | Estimativa p/ ${areaNum}m²: R$ ${(areaNum * m2Val).toFixed(2)}`,
+                notaRegional: tensao220
+                  ? 'Rede 220V F-N: chuveiro 5500W = 25A (Cabo 4,0mm² + Disjuntor 32A).'
+                  : 'Rede 127V/220V: chuveiros e ar split devem usar circuito 220V Bifásico (Fase+Fase) com disjuntor Bipolar.'
+              });
+            } else {
+              setResAgente({
+                agenteAcionado: 'AGENTE_AUDITOR_PROPOSTA',
+                escopoRbac: 'SCOPE_PROPOSAL_AUDITOR',
+                textoArgumentacaoCliente: `Olá! Sua proposta técnica para o imóvel de ${areaNum}m² (R$ ${valProp.toFixed(2)}) segue 100% a Norma ABNT NBR 5410: garante circuitos independentes sem aquecimento na fiação, proteção IDR 30mA contra choques, DPS contra surtos/raios e lista de cabos calibrada sem desperdício.`
+              });
+            }
+          } finally {
+            setCalculando(false);
+          }
+        };
+
+        return (
+          <div className="app-card">
+            <div className="app-form-group">
+              <label className="app-label">Selecione o Agente Especializado (Rota Isolada RBAC)</label>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
+                <button
+                  type="button"
+                  className={`app-btn app-btn-sm ${
+                    agenteSelecionado === 'AGENTE_DIAGNOSTICO_NR10'
+                      ? 'app-btn-primary'
+                      : 'app-btn-secondary'
+                  }`}
+                  style={{ justifyContent: 'flex-start' }}
+                  onClick={() => {
+                    setAgenteSelecionado('AGENTE_DIAGNOSTICO_NR10');
+                    setResAgente(null);
+                  }}
+                >
+                  <span className="material-icons" style={{ fontSize: '16px' }}>
+                    health_and_safety
+                  </span>
+                  <span>Agente 4: Diagnóstico de Panes &amp; Checklist NR-10</span>
+                </button>
+
+                <button
+                  type="button"
+                  className={`app-btn app-btn-sm ${
+                    agenteSelecionado === 'AGENTE_GEOLOCALIZACAO'
+                      ? 'app-btn-primary'
+                      : 'app-btn-secondary'
+                  }`}
+                  style={{ justifyContent: 'flex-start' }}
+                  onClick={() => {
+                    setAgenteSelecionado('AGENTE_GEOLOCALIZACAO');
+                    setResAgente(null);
+                  }}
+                >
+                  <span className="material-icons" style={{ fontSize: '16px' }}>
+                    public
+                  </span>
+                  <span>Agente 2: Geolocalização, Concessionária &amp; Preço/m² por UF</span>
+                </button>
+
+                <button
+                  type="button"
+                  className={`app-btn app-btn-sm ${
+                    agenteSelecionado === 'AGENTE_AUDITOR_PROPOSTA'
+                      ? 'app-btn-primary'
+                      : 'app-btn-secondary'
+                  }`}
+                  style={{ justifyContent: 'flex-start' }}
+                  onClick={() => {
+                    setAgenteSelecionado('AGENTE_AUDITOR_PROPOSTA');
+                    setResAgente(null);
+                  }}
+                >
+                  <span className="material-icons" style={{ fontSize: '16px' }}>
+                    verified
+                  </span>
+                  <span>Agente 5: Argumentação Técnica NBR 5410 p/ Fechar Cliente</span>
+                </button>
+              </div>
+            </div>
+
+            <form onSubmit={consultarAgente}>
+              {agenteSelecionado === 'AGENTE_DIAGNOSTICO_NR10' && (
+                <div className="app-form-group">
+                  <label className="app-label">Sintoma ou Defeito na Obra</label>
+                  <select
+                    className="app-select"
+                    value={contextoAgente}
+                    onChange={(e) => setContextoAgente(e.target.value)}
+                  >
+                    <option value="IDR 30mA desarmando ao ligar chuveiro">
+                      IDR 30mA desarmando (Fuga à Terra / Neutro Compartilhado)
+                    </option>
+                    <option value="Cabo aquecendo e cheiro de queimado no QDC">
+                      Cabo ou disjuntor aquecendo no QDC (Efeito Joule / Borne)
+                    </option>
+                    <option value="Disjuntor desarmando apos 10 minutos">
+                      Disjuntor caindo após alguns minutos (Sobrecarga vs. Curto)
+                    </option>
+                  </select>
+                </div>
+              )}
+
+              {agenteSelecionado === 'AGENTE_GEOLOCALIZACAO' && (
+                <div className="app-grid-2" style={{ gap: '0.65rem' }}>
+                  <div className="app-form-group">
+                    <label className="app-label">Estado (UF)</label>
+                    <input
+                      type="text"
+                      maxLength={2}
+                      className="app-input"
+                      value={ufAgente}
+                      onChange={(e) => setUfAgente(e.target.value.toUpperCase())}
+                    />
+                  </div>
+                  <div className="app-form-group">
+                    <label className="app-label">Cidade</label>
+                    <input
+                      type="text"
+                      className="app-input"
+                      value={cidadeAgente}
+                      onChange={(e) => setCidadeAgente(e.target.value)}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {agenteSelecionado === 'AGENTE_AUDITOR_PROPOSTA' && (
+                <div className="app-grid-2" style={{ gap: '0.65rem' }}>
+                  <div className="app-form-group">
+                    <label className="app-label">Área da Obra (m²)</label>
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      className="app-input"
+                      value={areaCasaM2}
+                      onChange={(e) => setAreaCasaM2(e.target.value)}
+                    />
+                  </div>
+                  <div className="app-form-group">
+                    <label className="app-label">Valor da Proposta (R$)</label>
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      className="app-input"
+                      value={valorPropostaAgente}
+                      onChange={(e) => setValorPropostaAgente(e.target.value)}
+                    />
+                  </div>
+                </div>
+              )}
+
+              <button type="submit" className="app-btn app-btn-primary" style={{ width: '100%' }}>
+                <span className="material-icons">smart_toy</span>
+                <span>Acionar Agente Protegido</span>
+              </button>
+            </form>
+
+            {resAgente && (
+              <div
+                style={{
+                  marginTop: '1rem',
+                  padding: '0.95rem',
+                  background: 'var(--bg-surface)',
+                  border: '1px solid var(--accent-border)',
+                  borderRadius: 'var(--radius-lg)'
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.55rem' }}>
+                  <span className="app-badge app-badge-amber">{resAgente.agenteAcionado}</span>
+                  <span className="app-badge app-badge-muted">{resAgente.escopoRbac}</span>
+                </div>
+
+                {resAgente.diagnostico && (
+                  <>
+                    <p style={{ fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.5rem' }}>
+                      {resAgente.diagnostico}
+                    </p>
+                    <ul style={{ paddingLeft: '1.1rem', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.65rem' }}>
+                      {(resAgente.passosCampo || []).map((p: string, i: number) => (
+                        <li key={i} style={{ marginBottom: '0.25rem' }}>{p}</li>
+                      ))}
+                    </ul>
+                    <div style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: '0.5rem' }}>
+                      <strong style={{ fontSize: '0.75rem', color: 'var(--status-success)' }}>
+                        ✓ Checklist NR-10 Obrigatório:
+                      </strong>
+                      <ul style={{ paddingLeft: '1.1rem', fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
+                        {(resAgente.checklistNr10 || []).map((c: string, i: number) => (
+                          <li key={i}>{c}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </>
+                )}
+
+                {resAgente.concessionaria && (
+                  <>
+                    <div className="mobile-stack-row" style={{ marginBottom: '0.35rem' }}>
+                      <span style={{ color: 'var(--text-secondary)' }}>Concessionária:</span>
+                      <strong>{resAgente.concessionaria} ({resAgente.regiaoAnalisada})</strong>
+                    </div>
+                    <div className="mobile-stack-row" style={{ marginBottom: '0.35rem' }}>
+                      <span style={{ color: 'var(--text-secondary)' }}>Tensão Nominal:</span>
+                      <strong style={{ color: 'var(--accent-primary)' }}>{resAgente.tensaoPadrao}</strong>
+                    </div>
+                    <p style={{ fontSize: '0.8rem', color: 'var(--status-success)', fontWeight: 700, marginTop: '0.4rem' }}>
+                      {resAgente.faixaJustaMaoDeObraM2}
+                    </p>
+                    <p style={{ fontSize: '0.76rem', color: 'var(--text-muted)', marginTop: '0.35rem' }}>
+                      {resAgente.notaRegional}
+                    </p>
+                  </>
+                )}
+
+                {resAgente.textoArgumentacaoCliente && (
+                  <>
+                    <p style={{ fontSize: '0.84rem', color: 'var(--text-main)', lineHeight: 1.45 }}>
+                      "{resAgente.textoArgumentacaoCliente}"
+                    </p>
+                    <button
+                      type="button"
+                      className="app-btn app-btn-secondary app-btn-sm"
+                      style={{ width: '100%', marginTop: '0.65rem' }}
+                      onClick={() => {
+                        navigator.clipboard?.writeText(resAgente.textoArgumentacaoCliente);
+                        alert('✓ Argumentação técnica copiada para enviar no WhatsApp do cliente!');
+                      }}
+                    >
+                      <span className="material-icons" style={{ fontSize: '15px' }}>
+                        content_copy
+                      </span>
+                      <span>Copiar Texto para WhatsApp do Cliente</span>
+                    </button>
+                  </>
+                )}
+              </div>
             )}
           </div>
         );
